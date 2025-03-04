@@ -1,0 +1,526 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Tenant - Landlord App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo h2 {
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+        .logo-icon {
+            font-size: 2.5rem;
+            color: #3498db;
+        }
+        .nav-menu {
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid #3498db;
+        }
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .page-title {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        .form-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-actions {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .btn {
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .hamburger-menu {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+        
+        /* Tenant stats cards */
+        .tenant-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100%;
+                z-index: 100;
+                transition: left 0.3s ease;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .main-content {
+                margin-top: 60px;
+            }
+            .hamburger-menu {
+                display: block;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="hamburger-menu" id="menuToggle">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🏢</div>
+            <h2>Landlord Manager</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="/" class="menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="/view-properties.html" class="menu-item">
+                <i>🏠</i> Properties
+            </a>
+            <a href="/view-tenants.html" class="menu-item active">
+                <i>👥</i> Tenants
+            </a>
+            <a href="/view-payments.html" class="menu-item">
+                <i>💵</i> Payments
+            </a>
+            <a href="#" class="menu-item">
+                <i>📑</i> Reports
+            </a>
+            <a href="#" class="menu-item">
+                <i>⚙️</i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title" id="tenantTitle">Edit Tenant</h1>
+
+        <div class="tenant-stats">
+            <div class="stat-card">
+                <div class="stat-label">Monthly Rent</div>
+                <div class="stat-value" id="monthlyRent">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Last Payment</div>
+                <div class="stat-value" id="lastPayment">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Payment Status</div>
+                <div class="stat-value" id="paymentStatus">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Lease Ends In</div>
+                <div class="stat-value" id="leaseEnds">-</div>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form id="editTenantForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Tenant Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="property_id">Property</label>
+                        <select id="property_id" name="property_id" required>
+                            <option value="">Select a property</option>
+                            <!-- Properties will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="unit_number">Unit Number</label>
+                        <input type="text" id="unit_number" name="unit_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="monthly_rent">Monthly Rent ($)</label>
+                        <input type="number" id="monthly_rent" name="monthly_rent" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="lease_start">Lease Start Date</label>
+                        <input type="date" id="lease_start" name="lease_start">
+                    </div>
+                    <div class="form-group">
+                        <label for="lease_end">Lease End Date</label>
+                        <input type="date" id="lease_end" name="lease_end">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="deposit">Security Deposit ($)</label>
+                        <input type="number" id="deposit" name="deposit" step="0.01" min="0">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" name="notes"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-tenants.html'">Cancel</button>
+                    <div>
+                        <button type="button" id="deleteTenantBtn" class="btn btn-danger">Delete Tenant</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+
+        // Close sidebar when clicking on a menu item (mobile)
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
+            });
+        });
+
+        // Get tenant ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tenantId = urlParams.get('id');
+        
+        if (!tenantId) {
+            window.location.href = '/view-tenants.html';
+        }
+
+        // Load properties for dropdown
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/properties');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch properties');
+                }
+                
+                const properties = await response.json();
+                const selectElement = document.getElementById('property_id');
+                
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = `${property.address}, ${property.city}`;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        // Load tenant data
+        async function loadTenant() {
+            try {
+                // Fetch tenant details
+                const response = await fetch(`/api/tenants/${tenantId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tenant');
+                }
+                
+                const tenant = await response.json();
+                
+                // Update form fields
+                document.getElementById('tenantTitle').textContent = `Edit Tenant: ${tenant.name}`;
+                document.getElementById('name').value = tenant.name || '';
+                document.getElementById('unit_number').value = tenant.unit_number || '';
+                document.getElementById('monthly_rent').value = tenant.monthly_rent || '';
+                document.getElementById('phone').value = tenant.phone || '';
+                document.getElementById('email').value = tenant.email || '';
+                document.getElementById('deposit').value = tenant.deposit || '';
+                document.getElementById('notes').value = tenant.notes || '';
+                
+                // Set dates
+                if (tenant.lease_start) {
+                    document.getElementById('lease_start').value = new Date(tenant.lease_start).toISOString().split('T')[0];
+                }
+                if (tenant.lease_end) {
+                    document.getElementById('lease_end').value = new Date(tenant.lease_end).toISOString().split('T')[0];
+                }
+                
+                // Set property dropdown
+                if (tenant.property_id) {
+                    document.getElementById('property_id').value = tenant.property_id;
+                }
+                
+                // Update tenant stats
+                document.getElementById('monthlyRent').textContent = `$${tenant.monthly_rent || 0}`;
+                
+                // Calculate days until lease end
+                let leaseEndsText = '-';
+                if (tenant.lease_end) {
+                    const leaseEnd = new Date(tenant.lease_end);
+                    const today = new Date();
+                    const daysLeft = Math.ceil((leaseEnd - today) / (1000 * 60 * 60 * 24));
+                    leaseEndsText = daysLeft > 0 ? `${daysLeft} days` : 'Expired';
+                }
+                document.getElementById('leaseEnds').textContent = leaseEndsText;
+                
+                // Fetch payments for this tenant
+                const paymentsResponse = await fetch(`/api/tenants/${tenantId}/payments`);
+                const payments = await paymentsResponse.json();
+                
+                // Get last payment amount
+                let lastPaymentAmount = '$0';
+                let paymentStatusText = 'Unpaid';
+                
+                if (payments.length > 0) {
+                    // Sort payments by date (most recent first)
+                    payments.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+                    lastPaymentAmount = `$${payments[0].amount || 0}`;
+                    
+                    // Check if payment was made this month
+                    const now = new Date();
+                    const currentMonth = now.getMonth();
+                    const currentYear = now.getFullYear();
+                    
+                    const hasCurrentMonthPayment = payments.some(payment => {
+                        const paymentDate = new Date(payment.payment_date);
+                        return paymentDate.getMonth() === currentMonth && 
+                               paymentDate.getFullYear() === currentYear &&
+                               payment.paid === true;
+                    });
+                    
+                    paymentStatusText = hasCurrentMonthPayment ? 'Paid' : 'Unpaid';
+                }
+                
+                document.getElementById('lastPayment').textContent = lastPaymentAmount;
+                document.getElementById('paymentStatus').textContent = paymentStatusText;
+                document.getElementById('paymentStatus').style.color = paymentStatusText === 'Paid' ? '#27ae60' : '#e74c3c';
+                
+            } catch (error) {
+                console.error('Error loading tenant:', error);
+                alert('Error loading tenant details. Please try again.');
+            }
+        }
+
+        // Save tenant changes
+        document.getElementById('editTenantForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = new FormData(this);
+                const tenant = {
+                    name: formData.get('name'),
+                    property_id: formData.get('property_id'),
+                    unit_number: formData.get('unit_number'),
+                    monthly_rent: parseFloat(formData.get('monthly_rent')) || 0,
+                    lease_start: formData.get('lease_start') || null,
+                    lease_end: formData.get('lease_end') || null,
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    deposit: parseFloat(formData.get('deposit')) || 0,
+                    notes: formData.get('notes')
+                };
+                
+                const response = await fetch(`/api/tenants/${tenantId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(tenant)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update tenant');
+                }
+                
+                alert('Tenant updated successfully!');
+                window.location.href = '/view-tenants.html';
+                
+            } catch (error) {
+                console.error('Error updating tenant:', error);
+                alert('Error updating tenant. Please try again.');
+            }
+        });
+
+        // Delete tenant
+        document.getElementById('deleteTenantBtn').addEventListener('click', async function() {
+            if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/tenants/${tenantId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete tenant');
+                }
+                
+                alert('Tenant deleted successfully!');
+                window.location.href = '/view-tenants.html';
+                
+            } catch (error) {
+                console.error('Error deleting tenant:', error);
+                alert('Error deleting tenant. Please try again.');
+            }
+        });
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProperties();
+            loadTenant();
+        });
+    </script>
+</body>
+</html>
