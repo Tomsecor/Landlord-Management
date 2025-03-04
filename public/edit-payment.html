@@ -393,7 +393,7 @@
                 document.getElementById('payment_type').value = payment.payment_type || 'Rent';
                 document.getElementById('payment_method').value = payment.payment_method || 'Cash';
                 document.getElementById('notes').value = payment.notes || '';
-                document.getElementById('paid').checked = payment.paid || false;
+                document.getElementById('paid').checked = payment.paid === true;
                 
                 // Set payment date
                 if (payment.payment_date) {
@@ -449,7 +449,7 @@
                     amount: parseFloat(formData.get('amount')) || 0,
                     payment_type: formData.get('payment_type'),
                     payment_method: formData.get('payment_method'),
-                    paid: formData.get('paid') === 'on',
+                    paid: document.getElementById('paid').checked,
                     notes: formData.get('notes')
                 };
                 

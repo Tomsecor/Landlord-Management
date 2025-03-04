@@ -329,7 +329,7 @@ app.put('/api/payments/:id', async (req, res) => {
       amount: parseFloat(req.body.amount) || 0,
       payment_type: req.body.payment_type || 'Rent',
       payment_method: req.body.payment_method || 'Cash',
-      paid: req.body.paid,
+      paid: req.body.paid === true || req.body.paid === 'true',
       notes: req.body.notes || '',
       updated_at: new Date()
     };
