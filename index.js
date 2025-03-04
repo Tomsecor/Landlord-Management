@@ -48,7 +48,7 @@ app.post('/payments', async (req, res) => {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
     const payment = {
-      unit_number: req.body.unit_number,
+      tenant_name: req.body.tenant_name,
       payment_date: new Date(req.body.payment_date),
       paid: req.body.paid === 'on' // Checkbox value
     };
@@ -99,16 +99,16 @@ async function main() {
     */
 
     // Check a tenant's payment status
-    async function checkTenantPayment(unitNumber, paymentDate) {
+    async function checkTenantPayment(tenantName, paymentDate) {
       const payment = await paymentsCollection.findOne({
-        unit_number: unitNumber,
+        tenant_name: tenantName,
         payment_date: paymentDate,
       });
-      console.log("Payment found for", unitNumber, "on", paymentDate.toDateString(), ":", payment);
+      console.log("Payment found for", tenantName, "on", paymentDate.toDateString(), ":", payment);
       if (payment && payment.paid) {
-        console.log(`${unitNumber} has paid for ${paymentDate.toDateString()}`);
+        console.log(`${tenantName} has paid for ${paymentDate.toDateString()}`);
       } else {
-        console.log(`${unitNumber} has not paid for ${paymentDate.toDateString()}`);
+        console.log(`${tenantName} has not paid for ${paymentDate.toDateString()}`);
       }
     }
 
@@ -116,18 +116,18 @@ async function main() {
     async function listTenantsWithStatus(paymentDate) {
       const payments = await paymentsCollection.find({ payment_date: paymentDate }).toArray();
       console.log("Payments for", paymentDate.toDateString(), ":", payments);
-      const paidUnits = payments.filter((p) => p.paid).map((p) => p.unit_number);
+      const paidTenants = payments.filter((p) => p.paid).map((p) => p.tenant_name);
       const tenants = await tenantsCollection.find().toArray();
       console.log("Tenants:", tenants);
       tenants.forEach((tenant) => {
-        const status = paidUnits.includes(tenant.unit_number) ? "Paid" : "Not Paid";
+        const status = paidTenants.includes(tenant.name) ? "Paid" : "Not Paid";
         console.log(`${tenant.name} (${tenant.unit_number}): ${status}`);
       });
     }
 
     // Run the functions
     const exampleDate = new Date("2023-10-01T00:00:00Z"); // UTC date
-    await checkTenantPayment("Apartment 5", exampleDate);
+    await checkTenantPayment("John Doe", exampleDate);
     await listTenantsWithStatus(exampleDate);
 
     console.log("All operations completed.");
