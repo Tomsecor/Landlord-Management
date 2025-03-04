@@ -31,17 +31,18 @@ app.post('/tenants', async (req, res) => {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
     const propertiesCollection = db.collection('properties');
-    
+
     // Check if property exists
-    const property = await propertiesCollection.findOne({ _id: new require('mongodb').ObjectId(req.body.property_id) });
+    const { ObjectId } = require('mongodb');
+    const property = await propertiesCollection.findOne({ _id: new ObjectId(req.body.property_id) });
     if (!property && req.body.property_id) {
       return res.status(400).send('Selected property does not exist');
     }
-    
+
     const tenant = {
       name: req.body.name,
       unit_number: req.body.unit_number,
-      property_id: req.body.property_id ? new require('mongodb').ObjectId(req.body.property_id) : null,
+      property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
       lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
       lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
       monthly_rent: parseFloat(req.body.monthly_rent) || 0,
@@ -64,13 +65,13 @@ app.post('/payments', async (req, res) => {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
     const tenantsCollection = db.collection('tenants');
-    
+
     // Find tenant to get property_id
     const tenant = await tenantsCollection.findOne({ name: req.body.tenant_name });
     if (!tenant) {
       return res.status(400).send('Selected tenant does not exist');
     }
-    
+
     const payment = {
       tenant_name: req.body.tenant_name,
       tenant_id: tenant._id,
@@ -98,19 +99,20 @@ app.get('/api/tenants', async (req, res) => {
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
     const propertiesCollection = db.collection('properties');
-    
+    const { ObjectId } = require('mongodb');
+
     // Get property filter if provided
     const propertyId = req.query.property_id;
-    const query = propertyId ? { property_id: new require('mongodb').ObjectId(propertyId) } : {};
-    
+    const query = propertyId ? { property_id: new ObjectId(propertyId) } : {};
+
     // Get all tenants (filtered by property if requested)
     const tenants = await tenantsCollection.find(query).toArray();
-    
+
     // Get current month payment status for each tenant
     const currentDate = new Date();
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    
+
     const enhancedTenants = await Promise.all(tenants.map(async (tenant) => {
       const payment = await paymentsCollection.findOne({
         tenant_name: tenant.name,
@@ -119,13 +121,13 @@ app.get('/api/tenants', async (req, res) => {
           $lte: endOfMonth
         }
       });
-      
+
       // Get property information
       let propertyInfo = null;
       if (tenant.property_id) {
         propertyInfo = await propertiesCollection.findOne({ _id: tenant.property_id });
       }
-      
+
       return {
         ...tenant,
         paymentStatus: payment && payment.paid ? 'Paid' : 'Not Paid',
@@ -135,7 +137,7 @@ app.get('/api/tenants', async (req, res) => {
         } : null
       };
     }));
-    
+
     res.json(enhancedTenants);
   } catch (error) {
     console.error('Error fetching tenants:', error);
@@ -150,21 +152,22 @@ app.get('/api/payments', async (req, res) => {
     const paymentsCollection = db.collection('payments');
     const tenantsCollection = db.collection('tenants');
     const propertiesCollection = db.collection('properties');
-    
+    const { ObjectId } = require('mongodb');
+
     // Get property filter if provided
     const propertyId = req.query.property_id;
-    const query = propertyId ? { property_id: new require('mongodb').ObjectId(propertyId) } : {};
-    
+    const query = propertyId ? { property_id: new ObjectId(propertyId) } : {};
+
     // Get all payments (filtered by property if requested)
     const payments = await paymentsCollection.find(query).toArray();
-    
+
     // Enhance payments with property and tenant info
     const enhancedPayments = await Promise.all(payments.map(async (payment) => {
       let propertyInfo = null;
       if (payment.property_id) {
         propertyInfo = await propertiesCollection.findOne({ _id: payment.property_id });
       }
-      
+
       return {
         ...payment,
         propertyInfo: propertyInfo ? {
@@ -173,7 +176,7 @@ app.get('/api/payments', async (req, res) => {
         } : null
       };
     }));
-    
+
     res.json(enhancedPayments);
   } catch (error) {
     console.error('Error fetching payments:', error);
@@ -186,11 +189,12 @@ app.get('/api/properties/:id/tenants', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
-    
+    const { ObjectId } = require('mongodb');
+
     const tenants = await tenantsCollection.find({ 
-      property_id: new require('mongodb').ObjectId(req.params.id) 
+      property_id: new ObjectId(req.params.id) 
     }).toArray();
-    
+
     res.json(tenants);
   } catch (error) {
     console.error('Error fetching property tenants:', error);
@@ -203,11 +207,12 @@ app.get('/api/properties/:id/payments', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
-    
+    const { ObjectId } = require('mongodb');
+
     const payments = await paymentsCollection.find({ 
-      property_id: new require('mongodb').ObjectId(req.params.id) 
+      property_id: new ObjectId(req.params.id) 
     }).toArray();
-    
+
     res.json(payments);
   } catch (error) {
     console.error('Error fetching property payments:', error);
@@ -220,8 +225,9 @@ app.delete('/api/tenants/:id', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
-    const result = await tenantsCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
-    
+    const { ObjectId } = require('mongodb');
+    const result = await tenantsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+
     if (result.deletedCount === 1) {
       res.status(200).json({ message: 'Tenant deleted successfully' });
     } else {
@@ -238,8 +244,9 @@ app.delete('/api/payments/:id', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
-    const result = await paymentsCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
-    
+    const { ObjectId } = require('mongodb');
+    const result = await paymentsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+
     if (result.deletedCount === 1) {
       res.status(200).json({ message: 'Payment deleted successfully' });
     } else {
@@ -270,8 +277,9 @@ app.get('/api/properties/:id', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const propertiesCollection = db.collection('properties');
-    const property = await propertiesCollection.findOne({ _id: new require('mongodb').ObjectId(req.params.id) });
-    
+    const { ObjectId } = require('mongodb');
+    const property = await propertiesCollection.findOne({ _id: new ObjectId(req.params.id) });
+
     if (property) {
       res.json(property);
     } else {
@@ -303,7 +311,7 @@ app.post('/api/properties', async (req, res) => {
       notes: req.body.notes || '',
       created_at: new Date()
     };
-    
+
     const result = await propertiesCollection.insertOne(property);
     res.status(201).json({ message: 'Property added successfully', id: result.insertedId });
   } catch (error) {
@@ -332,12 +340,13 @@ app.put('/api/properties/:id', async (req, res) => {
       notes: req.body.notes || '',
       updated_at: new Date()
     };
-    
+    const { ObjectId } = require('mongodb');
+
     const result = await propertiesCollection.updateOne(
-      { _id: new require('mongodb').ObjectId(req.params.id) },
+      { _id: new ObjectId(req.params.id) },
       { $set: property }
     );
-    
+
     if (result.matchedCount === 1) {
       res.json({ message: 'Property updated successfully' });
     } else {
@@ -354,8 +363,9 @@ app.delete('/api/properties/:id', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const propertiesCollection = db.collection('properties');
-    const result = await propertiesCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
-    
+    const { ObjectId } = require('mongodb');
+    const result = await propertiesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+
     if (result.deletedCount === 1) {
       res.status(200).json({ message: 'Property deleted successfully' });
     } else {
@@ -374,18 +384,18 @@ app.get('/api/statistics', async (req, res) => {
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
     const propertiesCollection = db.collection('properties');
-    
+
     // Count total tenants
     const totalTenants = await tenantsCollection.countDocuments();
-    
+
     // Count total properties
     const totalProperties = await propertiesCollection.countDocuments();
-    
+
     // Calculate monthly income (sum of all paid payments in the current month)
     const currentDate = new Date();
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    
+
     const paidPayments = await paymentsCollection.find({
       payment_date: {
         $gte: startOfMonth,
@@ -393,21 +403,21 @@ app.get('/api/statistics', async (req, res) => {
       },
       paid: true
     }).toArray();
-    
+
     // Calculate actual income from payment amounts
     const monthlyIncome = paidPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
-    
+
     // Calculate total property value
     const properties = await propertiesCollection.find().toArray();
     const totalPropertyValue = properties.reduce((total, property) => total + (property.purchase_price || 0), 0);
-    
+
     // Calculate occupancy rate
     const occupiedUnits = await tenantsCollection.countDocuments();
     const occupancyRate = totalProperties > 0 ? (occupiedUnits / totalProperties) * 100 : 0;
-    
+
     // Calculate potential monthly income (sum of all property rents)
     const potentialMonthlyIncome = properties.reduce((total, property) => total + (property.rent || 0), 0);
-    
+
     res.json({
       totalTenants,
       totalProperties,
@@ -500,4 +510,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
