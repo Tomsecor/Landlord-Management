@@ -422,20 +422,20 @@
             event.preventDefault();
             
             try {
-                const formData = new FormData(this);
+                // Get form values directly from the elements
                 const property = {
-                    address: formData.get('address'),
-                    city: formData.get('city'),
-                    state: formData.get('state'),
-                    zip: formData.get('zip'),
-                    type: formData.get('type'),
-                    bedrooms: parseInt(formData.get('bedrooms')) || 0,
-                    bathrooms: parseFloat(formData.get('bathrooms')) || 0,
-                    sqft: parseInt(formData.get('sqft')) || 0,
-                    rent: parseFloat(formData.get('rent')) || 0,
-                    purchase_price: parseFloat(formData.get('purchase_price')) || 0,
-                    purchase_date: formData.get('purchase_date') || null,
-                    notes: formData.get('notes')
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value,
+                    zip: document.getElementById('zip').value,
+                    type: document.getElementById('type').value,
+                    bedrooms: parseInt(document.getElementById('bedrooms').value) || 0,
+                    bathrooms: parseFloat(document.getElementById('bathrooms').value) || 0,
+                    sqft: parseInt(document.getElementById('sqft').value) || 0,
+                    rent: parseFloat(document.getElementById('rent').value) || 0,
+                    purchase_price: parseFloat(document.getElementById('purchase_price').value) || 0,
+                    purchase_date: document.getElementById('purchase_date').value || null,
+                    notes: document.getElementById('notes').value
                 };
                 
                 const response = await fetch(`/api/properties/${propertyId}`, {

@@ -23,6 +23,7 @@ const express = require('express');
 const app = express();
 
 app.use(express.urlencoded({ extended: true })); // To parse form data
+app.use(express.json()); // Add JSON middleware to parse JSON request bodies
 app.use(express.static('public')); // Serve static files from 'public' folder
 
 // POST route for adding tenants
