@@ -121,13 +121,29 @@
         .grid-table tr:hover {
             background-color: #f1f2f6;
         }
-        .action-cell {
+        .actions {
             display: flex;
-            gap: 5px;
+            gap: 8px;
         }
-        .action-btn.small {
-            padding: 5px 10px;
-            font-size: 14px;
+        .actions button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+        .edit-btn {
+            color: #3498db;
+        }
+        .delete-btn {
+            color: #e74c3c;
+        }
+        .view-payments-btn {
+            color: #2ecc71;
+        }
+        .add-payment-btn {
+            color: #f39c12;
         }
         .pagination {
             display: flex;
@@ -351,9 +367,11 @@
                                 <td>${tenant.name}</td>
                                 <td>${tenant.unit_number}</td>
                                 <td>${tenant.paymentStatus || 'Not Paid'}</td>
-                                <td class="action-cell">
-                                    <button class="action-btn small" onclick="editTenant('${tenant._id}')">Edit</button>
-                                    <button class="action-btn small warning" onclick="deleteTenant('${tenant._id}')">Delete</button>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editTenant('${tenant._id}')">✏️</button>
+                                    <button class="delete-btn" onclick="deleteTenant('${tenant._id}')">🗑️</button>
+                                    <button class="view-payments-btn" onclick="viewPayments('${tenant._id}')">💵</button>
+                                    <button class="add-payment-btn" onclick="addPayment('${tenant._id}')">➕</button>
                                 </td>
                             `;
                             tableBody.appendChild(row);
@@ -373,7 +391,7 @@
                     window.location.href = `/edit-tenant.html?id=${id}`;
                 }
 
-                // Delete tenant function (placeholder)
+                // Delete tenant function
                 function deleteTenant(id) {
                     if (confirm('Are you sure you want to delete this tenant?')) {
                         fetch(`/api/tenants/${id}`, {
@@ -392,6 +410,16 @@
                             alert('An error occurred');
                         });
                     }
+                }
+                
+                // View payments for tenant
+                function viewPayments(id) {
+                    window.location.href = `/view-payments.html?tenant_id=${id}`;
+                }
+                
+                // Add payment for tenant
+                function addPayment(id) {
+                    window.location.href = `/add-payment.html?tenant_id=${id}`;
                 }
 
                 // Search function (Placeholder.  Needs to be updated to actually search)
