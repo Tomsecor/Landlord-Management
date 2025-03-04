@@ -32,7 +32,15 @@ app.post('/tenants', async (req, res) => {
     const tenantsCollection = db.collection('tenants');
     const tenant = {
       name: req.body.name,
-      unit_number: req.body.unit_number
+      unit_number: req.body.unit_number,
+      property_id: req.body.property_id || null,
+      lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
+      lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
+      monthly_rent: parseFloat(req.body.monthly_rent) || 0,
+      deposit: parseFloat(req.body.deposit) || 0,
+      phone: req.body.phone || '',
+      email: req.body.email || '',
+      created_at: new Date()
     };
     await tenantsCollection.insertOne(tenant);
     res.send('Tenant added successfully');
@@ -47,10 +55,23 @@ app.post('/payments', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
+    const tenantsCollection = db.collection('tenants');
+    
+    // Find tenant to get property_id
+    const tenant = await tenantsCollection.findOne({ name: req.body.tenant_name });
+    const property_id = tenant ? tenant.property_id : null;
+    
     const payment = {
       tenant_name: req.body.tenant_name,
+      tenant_id: tenant ? tenant._id : null,
+      property_id: property_id,
       payment_date: new Date(req.body.payment_date),
-      paid: req.body.paid === 'on' // Checkbox value
+      amount: parseFloat(req.body.amount) || tenant?.monthly_rent || 0,
+      payment_type: req.body.payment_type || 'Rent',
+      payment_method: req.body.payment_method || 'Cash',
+      paid: req.body.paid === 'on', // Checkbox value
+      notes: req.body.notes || '',
+      created_at: new Date()
     };
     await paymentsCollection.insertOne(payment);
     res.send('Payment added successfully');
@@ -146,19 +167,135 @@ app.delete('/api/payments/:id', async (req, res) => {
   }
 });
 
+// API endpoints for properties
+// Get all properties
+app.get('/api/properties', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const propertiesCollection = db.collection('properties');
+    const properties = await propertiesCollection.find().toArray();
+    res.json(properties);
+  } catch (error) {
+    console.error('Error fetching properties:', error);
+    res.status(500).json({ error: 'Failed to fetch properties' });
+  }
+});
+
+// Get a single property
+app.get('/api/properties/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const propertiesCollection = db.collection('properties');
+    const property = await propertiesCollection.findOne({ _id: new require('mongodb').ObjectId(req.params.id) });
+    
+    if (property) {
+      res.json(property);
+    } else {
+      res.status(404).json({ error: 'Property not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching property:', error);
+    res.status(500).json({ error: 'Failed to fetch property' });
+  }
+});
+
+// Add a new property
+app.post('/api/properties', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const propertiesCollection = db.collection('properties');
+    const property = {
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      zip: req.body.zip,
+      type: req.body.type,
+      bedrooms: parseInt(req.body.bedrooms) || 0,
+      bathrooms: parseFloat(req.body.bathrooms) || 0,
+      sqft: parseInt(req.body.sqft) || 0,
+      rent: parseFloat(req.body.rent) || 0,
+      purchase_price: parseFloat(req.body.purchase_price) || 0,
+      purchase_date: req.body.purchase_date ? new Date(req.body.purchase_date) : null,
+      notes: req.body.notes || '',
+      created_at: new Date()
+    };
+    
+    const result = await propertiesCollection.insertOne(property);
+    res.status(201).json({ message: 'Property added successfully', id: result.insertedId });
+  } catch (error) {
+    console.error('Error adding property:', error);
+    res.status(500).json({ error: 'Failed to add property' });
+  }
+});
+
+// Update a property
+app.put('/api/properties/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const propertiesCollection = db.collection('properties');
+    const property = {
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      zip: req.body.zip,
+      type: req.body.type,
+      bedrooms: parseInt(req.body.bedrooms) || 0,
+      bathrooms: parseFloat(req.body.bathrooms) || 0,
+      sqft: parseInt(req.body.sqft) || 0,
+      rent: parseFloat(req.body.rent) || 0,
+      purchase_price: parseFloat(req.body.purchase_price) || 0,
+      purchase_date: req.body.purchase_date ? new Date(req.body.purchase_date) : null,
+      notes: req.body.notes || '',
+      updated_at: new Date()
+    };
+    
+    const result = await propertiesCollection.updateOne(
+      { _id: new require('mongodb').ObjectId(req.params.id) },
+      { $set: property }
+    );
+    
+    if (result.matchedCount === 1) {
+      res.json({ message: 'Property updated successfully' });
+    } else {
+      res.status(404).json({ error: 'Property not found' });
+    }
+  } catch (error) {
+    console.error('Error updating property:', error);
+    res.status(500).json({ error: 'Failed to update property' });
+  }
+});
+
+// Delete a property
+app.delete('/api/properties/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const propertiesCollection = db.collection('properties');
+    const result = await propertiesCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
+    
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Property deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Property not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting property:', error);
+    res.status(500).json({ error: 'Failed to delete property' });
+  }
+});
+
 // API endpoint to get dashboard statistics
 app.get('/api/statistics', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
+    const propertiesCollection = db.collection('properties');
     
     // Count total tenants
     const totalTenants = await tenantsCollection.countDocuments();
     
-    // Count unique properties (unit numbers)
-    const uniqueProperties = await tenantsCollection.distinct('unit_number');
-    const totalProperties = uniqueProperties.length;
+    // Count total properties
+    const totalProperties = await propertiesCollection.countDocuments();
     
     // Calculate monthly income (sum of all paid payments in the current month)
     const currentDate = new Date();
@@ -173,13 +310,28 @@ app.get('/api/statistics', async (req, res) => {
       paid: true
     }).toArray();
     
-    // Assuming each payment is $1000 (you might want to add an amount field to your payments model)
-    const monthlyIncome = paidPayments.length * 1000;
+    // Calculate actual income from payment amounts
+    const monthlyIncome = paidPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
+    
+    // Calculate total property value
+    const properties = await propertiesCollection.find().toArray();
+    const totalPropertyValue = properties.reduce((total, property) => total + (property.purchase_price || 0), 0);
+    
+    // Calculate occupancy rate
+    const occupiedUnits = await tenantsCollection.countDocuments();
+    const occupancyRate = totalProperties > 0 ? (occupiedUnits / totalProperties) * 100 : 0;
+    
+    // Calculate potential monthly income (sum of all property rents)
+    const potentialMonthlyIncome = properties.reduce((total, property) => total + (property.rent || 0), 0);
     
     res.json({
       totalTenants,
       totalProperties,
-      monthlyIncome
+      monthlyIncome,
+      totalPropertyValue,
+      occupancyRate: Math.round(occupancyRate),
+      potentialMonthlyIncome,
+      collectionRate: potentialMonthlyIncome > 0 ? Math.round((monthlyIncome / potentialMonthlyIncome) * 100) : 0
     });
   } catch (error) {
     console.error('Error fetching statistics:', error);
