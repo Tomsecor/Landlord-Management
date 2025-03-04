@@ -1,3 +1,134 @@
-<h1>Landlord App</h1>
-<a href="/add-tenant.html">Add Tenant</a><br>
-<a href="/add-payment.html">Add Payment</a>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landlord App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .logo {
+            margin-bottom: 15px;
+            font-size: 3.5rem;
+            color: #3498db;
+        }
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 25px;
+            width: 200px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            color: #333;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+        .card p {
+            color: #666;
+        }
+        .info-section {
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+            text-align: left;
+        }
+        footer {
+            margin-top: 50px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Landlord Management App</h1>
+            <p>Simplify tenant and payment management</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="logo">
+            <i>🏢</i>
+        </div>
+        
+        <p>Welcome to your property management dashboard</p>
+        
+        <div class="card-container">
+            <a href="/add-tenant.html" class="card">
+                <div class="card-icon">👤</div>
+                <h2>Add Tenant</h2>
+                <p>Register new tenants in your property</p>
+            </a>
+            
+            <a href="/add-payment.html" class="card">
+                <div class="card-icon">💰</div>
+                <h2>Add Payment</h2>
+                <p>Record rent payments from tenants</p>
+            </a>
+        </div>
+        
+        <div class="info-section">
+            <h3>📊 Property Management Made Easy</h3>
+            <p>Keep track of all your tenants and their payment status in one place. This application helps you manage your rental properties efficiently.</p>
+            
+            <h3>✅ Features</h3>
+            <ul>
+                <li>Tenant registration and management</li>
+                <li>Payment tracking and history</li>
+                <li>Simple and intuitive interface</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>Landlord Management App &copy; 2023</p>
+        </div>
+    </footer>
+</body>
+</html>
