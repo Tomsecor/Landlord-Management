@@ -183,6 +183,65 @@
             padding: 10px;
             cursor: pointer;
         }
+        
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tbody tr:hover {
+            background-color: #f1f2f6;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .status-paid {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .status-unpaid {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .actions button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+        .edit-btn {
+            color: #3498db;
+        }
+        .delete-btn {
+            color: #e74c3c;
+        }
+        .view-btn {
+            color: #2ecc71;
+        }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
@@ -324,6 +383,60 @@
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
+        </div>
+        
+        <h2 class="page-title" style="margin-top: 30px;">Property Tenants</h2>
+        <div class="data-container">
+            <div class="table-container">
+                <table id="tenantsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Unit</th>
+                            <th>Lease Start</th>
+                            <th>Lease End</th>
+                            <th>Monthly Rent</th>
+                            <th>Payment Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenantsList">
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Loading tenants...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-actions" style="margin-top: 15px; text-align: right;">
+                <button class="btn btn-primary" onclick="addTenant(propertyId)">+ Add Tenant</button>
+            </div>
+        </div>
+        
+        <h2 class="page-title" style="margin-top: 30px;">Property Payments</h2>
+        <div class="data-container">
+            <div class="table-container">
+                <table id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Tenant</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsList">
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Loading payments...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-actions" style="margin-top: 15px; text-align: right;">
+                <button class="btn btn-primary" onclick="addPayment(propertyId)">+ Add Payment</button>
+            </div>
         </div>
     </div>
 
@@ -478,7 +591,167 @@
         });
         
         // Load property when page loads
-        document.addEventListener('DOMContentLoaded', loadProperty);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProperty();
+            loadPropertyTenants();
+            loadPropertyPayments();
+        });
+        
+        // Load tenants for this property
+        async function loadPropertyTenants() {
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/tenants`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tenants');
+                }
+                
+                const tenants = await response.json();
+                const tableBody = document.getElementById('tenantsList');
+                
+                if (tenants.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tenants found for this property</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = '';
+                tenants.forEach(tenant => {
+                    // Format dates
+                    const leaseStart = tenant.lease_start ? new Date(tenant.lease_start).toLocaleDateString() : 'N/A';
+                    const leaseEnd = tenant.lease_end ? new Date(tenant.lease_end).toLocaleDateString() : 'N/A';
+                    const paymentStatus = tenant.paymentStatus || 'Not Paid';
+                    const statusClass = paymentStatus === 'Paid' ? 'status-paid' : 'status-unpaid';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${tenant.name}</td>
+                        <td>${tenant.unit_number}</td>
+                        <td>${leaseStart}</td>
+                        <td>${leaseEnd}</td>
+                        <td>$${tenant.monthly_rent || 0}</td>
+                        <td><span class="status-badge ${statusClass}">${paymentStatus}</span></td>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editTenant('${tenant._id}')">✏️</button>
+                            <button class="delete-btn" onclick="deleteTenant('${tenant._id}')">🗑️</button>
+                            <button class="view-btn" onclick="viewTenantPayments('${tenant._id}')">💵</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading property tenants:', error);
+                document.getElementById('tenantsList').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center;">Error loading tenants</td></tr>';
+            }
+        }
+        
+        // Load payments for this property
+        async function loadPropertyPayments() {
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/payments`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch payments');
+                }
+                
+                const payments = await response.json();
+                const tableBody = document.getElementById('paymentsList');
+                
+                if (payments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No payments found for this property</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = '';
+                payments.forEach(payment => {
+                    // Format date
+                    const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A';
+                    const statusClass = payment.paid ? 'status-paid' : 'status-unpaid';
+                    const status = payment.paid ? 'Paid' : 'Unpaid';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${paymentDate}</td>
+                        <td>${payment.tenant_name || 'N/A'}</td>
+                        <td>$${payment.amount || 0}</td>
+                        <td>${payment.payment_type || 'N/A'}</td>
+                        <td>${payment.payment_method || 'N/A'}</td>
+                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editPayment('${payment._id}')">✏️</button>
+                            <button class="delete-btn" onclick="deletePayment('${payment._id}')">🗑️</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading property payments:', error);
+                document.getElementById('paymentsList').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center;">Error loading payments</td></tr>';
+            }
+        }
+        
+        // Action functions for tenants
+        function editTenant(id) {
+            window.location.href = `/edit-tenant.html?id=${id}`;
+        }
+        
+        function deleteTenant(id) {
+            if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+                return;
+            }
+            
+            fetch(`/api/tenants/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete tenant');
+                }
+                loadPropertyTenants();
+                loadTenantCount();
+            })
+            .catch(error => {
+                console.error('Error deleting tenant:', error);
+                alert('Error deleting tenant');
+            });
+        }
+        
+        function viewTenantPayments(id) {
+            window.location.href = `/view-payments.html?tenant_id=${id}`;
+        }
+        
+        function addTenant(propertyId) {
+            window.location.href = `/add-tenant.html?property_id=${propertyId}`;
+        }
+        
+        // Action functions for payments
+        function editPayment(id) {
+            window.location.href = `/edit-payment.html?id=${id}`;
+        }
+        
+        function deletePayment(id) {
+            if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+                return;
+            }
+            
+            fetch(`/api/payments/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete payment');
+                }
+                loadPropertyPayments();
+                loadPropertyIncome();
+            })
+            .catch(error => {
+                console.error('Error deleting payment:', error);
+                alert('Error deleting payment');
+            });
+        }
+        
+        function addPayment(propertyId) {
+            window.location.href = `/add-payment.html?property_id=${propertyId}`;
+        }
     </script>
 </body>
 </html>

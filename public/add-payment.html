@@ -161,19 +161,31 @@
                 // Load tenants for the dropdown
                 async function loadTenants() {
                     try {
-                        const response = await fetch('/api/tenants');
+                        // Check if property_id is in URL (coming from property view)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const propertyId = urlParams.get('property_id');
+                        
+                        // Fetch tenants, filtered by property if property_id is provided
+                        let url = '/api/tenants';
+                        if (propertyId) {
+                            url += `?property_id=${propertyId}`;
+                        }
+                        
+                        const response = await fetch(url);
                         if (!response.ok) {
                             throw new Error('Failed to fetch tenants');
                         }
                         
                         const tenants = await response.json();
                         const selectElement = document.getElementById('tenant_name');
+                        selectElement.innerHTML = '<option value="">Select a tenant</option>';
                         
                         tenants.forEach(tenant => {
                             const option = document.createElement('option');
                             option.value = tenant.name;
                             option.textContent = `${tenant.name} (${tenant.unit_number})`;
                             option.dataset.rent = tenant.monthly_rent || '';
+                            option.dataset.tenantId = tenant._id || '';
                             selectElement.appendChild(option);
                         });
                         
@@ -184,6 +196,20 @@
                                 document.getElementById('amount').value = selectedOption.dataset.rent || '';
                             }
                         });
+                        
+                        // Handle tenant_id param if passed
+                        const tenantId = urlParams.get('tenant_id');
+                        if (tenantId) {
+                            // Find option with matching tenant ID and select it
+                            for (let i = 0; i < selectElement.options.length; i++) {
+                                if (selectElement.options[i].dataset.tenantId === tenantId) {
+                                    selectElement.selectedIndex = i;
+                                    // Trigger change event to set amount
+                                    selectElement.dispatchEvent(new Event('change'));
+                                    break;
+                                }
+                            }
+                        }
                     } catch (error) {
                         console.error('Error loading tenants:', error);
                     }

@@ -221,6 +221,24 @@ app.get('/api/properties/:id/payments', async (req, res) => {
   }
 });
 
+// API endpoint to get payments by tenant
+app.get('/api/tenants/:id/payments', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const paymentsCollection = db.collection('payments');
+    const { ObjectId } = require('mongodb');
+
+    const payments = await paymentsCollection.find({ 
+      tenant_id: new ObjectId(req.params.id) 
+    }).toArray();
+
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching tenant payments:', error);
+    res.status(500).json({ error: 'Failed to fetch tenant payments' });
+  }
+});
+
 // API endpoint to get a single tenant
 app.get('/api/tenants/:id', async (req, res) => {
   try {
