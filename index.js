@@ -60,6 +60,92 @@ app.post('/payments', async (req, res) => {
   }
 });
 
+// API endpoint to get all tenants
+app.get('/api/tenants', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const tenantsCollection = db.collection('tenants');
+    const paymentsCollection = db.collection('payments');
+    
+    // Get all tenants
+    const tenants = await tenantsCollection.find().toArray();
+    
+    // Get current month payment status for each tenant
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    const enhancedTenants = await Promise.all(tenants.map(async (tenant) => {
+      const payment = await paymentsCollection.findOne({
+        tenant_name: tenant.name,
+        payment_date: {
+          $gte: startOfMonth,
+          $lte: endOfMonth
+        }
+      });
+      
+      return {
+        ...tenant,
+        paymentStatus: payment && payment.paid ? 'Paid' : 'Not Paid'
+      };
+    }));
+    
+    res.json(enhancedTenants);
+  } catch (error) {
+    console.error('Error fetching tenants:', error);
+    res.status(500).json({ error: 'Failed to fetch tenants' });
+  }
+});
+
+// API endpoint to get all payments
+app.get('/api/payments', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const paymentsCollection = db.collection('payments');
+    const payments = await paymentsCollection.find().toArray();
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+// API endpoint to delete a tenant
+app.delete('/api/tenants/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const tenantsCollection = db.collection('tenants');
+    const result = await tenantsCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
+    
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Tenant deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Tenant not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting tenant:', error);
+    res.status(500).json({ error: 'Failed to delete tenant' });
+  }
+});
+
+// API endpoint to delete a payment
+app.delete('/api/payments/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const paymentsCollection = db.collection('payments');
+    const result = await paymentsCollection.deleteOne({ _id: new require('mongodb').ObjectId(req.params.id) });
+    
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Payment deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Payment not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting payment:', error);
+    res.status(500).json({ error: 'Failed to delete payment' });
+  }
+});
+
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
