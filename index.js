@@ -146,6 +146,47 @@ app.delete('/api/payments/:id', async (req, res) => {
   }
 });
 
+// API endpoint to get dashboard statistics
+app.get('/api/statistics', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const tenantsCollection = db.collection('tenants');
+    const paymentsCollection = db.collection('payments');
+    
+    // Count total tenants
+    const totalTenants = await tenantsCollection.countDocuments();
+    
+    // Count unique properties (unit numbers)
+    const uniqueProperties = await tenantsCollection.distinct('unit_number');
+    const totalProperties = uniqueProperties.length;
+    
+    // Calculate monthly income (sum of all paid payments in the current month)
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    const paidPayments = await paymentsCollection.find({
+      payment_date: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      },
+      paid: true
+    }).toArray();
+    
+    // Assuming each payment is $1000 (you might want to add an amount field to your payments model)
+    const monthlyIncome = paidPayments.length * 1000;
+    
+    res.json({
+      totalTenants,
+      totalProperties,
+      monthlyIncome
+    });
+  } catch (error) {
+    console.error('Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
