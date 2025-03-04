@@ -68,24 +68,50 @@
             color: #2c3e50;
             font-size: 2rem;
         }
-        .form-container {
+        .data-container {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 30px;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .property-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
         }
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .form-group.full-width {
-            grid-column: span 2;
+            grid-column: 1 / -1;
         }
         label {
             display: block;
@@ -93,7 +119,11 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        input, select, textarea {
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -106,17 +136,17 @@
             resize: vertical;
         }
         .form-actions {
-            margin-top: 30px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
         .btn {
-            padding: 12px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: center;
+            padding: 10px 20px;
             border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
             transition: background-color 0.3s;
         }
         .btn-primary {
@@ -153,32 +183,6 @@
             padding: 10px;
             cursor: pointer;
         }
-        
-        /* Property stats cards */
-        .property-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 15px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #3498db;
-            margin: 10px 0;
-        }
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
@@ -205,9 +209,6 @@
             }
             .form-grid {
                 grid-template-columns: 1fr;
-            }
-            .form-group.full-width {
-                grid-column: span 1;
             }
         }
     </style>
@@ -255,16 +256,12 @@
                 <div class="stat-value" id="monthlyIncome">$0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Occupancy</div>
-                <div class="stat-value" id="occupancyRate">0%</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-label">Property Value</div>
                 <div class="stat-value" id="propertyValue">$0</div>
             </div>
         </div>
 
-        <div class="form-container">
+        <div class="data-container">
             <form id="editPropertyForm">
                 <div class="form-grid">
                     <div class="form-group">
@@ -288,15 +285,10 @@
                         <select id="type" name="type">
                             <option value="Single Family">Single Family</option>
                             <option value="Multi Family">Multi Family</option>
-                            <option value="Apartment">Apartment</option>
                             <option value="Condo">Condo</option>
-                            <option value="Townhouse">Townhouse</option>
+                            <option value="Apartment">Apartment</option>
                             <option value="Commercial">Commercial</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="rent">Monthly Rent ($)</label>
-                        <input type="number" id="rent" name="rent" step="0.01" min="0">
                     </div>
                     <div class="form-group">
                         <label for="bedrooms">Bedrooms</label>
@@ -304,7 +296,11 @@
                     </div>
                     <div class="form-group">
                         <label for="bathrooms">Bathrooms</label>
-                        <input type="number" id="bathrooms" name="bathrooms" step="0.5" min="0">
+                        <input type="number" id="bathrooms" name="bathrooms" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="rent">Monthly Rent ($)</label>
+                        <input type="number" id="rent" name="rent" step="0.01" min="0">
                     </div>
                     <div class="form-group">
                         <label for="sqft">Square Feet</label>
@@ -325,10 +321,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-properties.html'">Cancel</button>
-                    <div>
-                        <button type="button" id="deletePropertyBtn" class="btn btn-danger">Delete Property</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -349,75 +342,101 @@
             });
         });
 
-        // Get property ID from URL
+        // Get property ID from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const propertyId = urlParams.get('id');
         
-        if (!propertyId) {
-            window.location.href = '/view-properties.html';
-        }
-
         // Load property data
         async function loadProperty() {
             try {
-                // Fetch property details
                 const response = await fetch(`/api/properties/${propertyId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch property');
                 }
                 
                 const property = await response.json();
-                
-                // Update form fields
                 document.getElementById('propertyTitle').textContent = `Edit Property: ${property.address}`;
+                
+                // Fill form with property data
                 document.getElementById('address').value = property.address || '';
                 document.getElementById('city').value = property.city || '';
                 document.getElementById('state').value = property.state || '';
                 document.getElementById('zip').value = property.zip || '';
                 document.getElementById('type').value = property.type || 'Single Family';
-                document.getElementById('rent').value = property.rent || '';
                 document.getElementById('bedrooms').value = property.bedrooms || '';
                 document.getElementById('bathrooms').value = property.bathrooms || '';
+                document.getElementById('rent').value = property.rent || '';
                 document.getElementById('sqft').value = property.sqft || '';
                 document.getElementById('purchase_price').value = property.purchase_price || '';
-                document.getElementById('purchase_date').value = property.purchase_date ? new Date(property.purchase_date).toISOString().split('T')[0] : '';
+                
+                // Format purchase date if it exists
+                if (property.purchase_date) {
+                    const date = new Date(property.purchase_date);
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    document.getElementById('purchase_date').value = `${yyyy}-${mm}-${dd}`;
+                }
+                
                 document.getElementById('notes').value = property.notes || '';
                 
-                // Load property value
+                // Load property stats
                 document.getElementById('propertyValue').textContent = `$${property.purchase_price || 0}`;
                 
-                // Fetch tenants for this property
-                const tenantsResponse = await fetch(`/api/properties/${propertyId}/tenants`);
-                const tenants = await tenantsResponse.json();
+                // Load tenant count
+                loadTenantCount();
+                
+                // Load income
+                loadPropertyIncome();
+            } catch (error) {
+                console.error('Error loading property:', error);
+                alert('Error loading property. Please try again.');
+            }
+        }
+        
+        // Load tenant count for this property
+        async function loadTenantCount() {
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/tenants`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tenants');
+                }
+                
+                const tenants = await response.json();
                 document.getElementById('tenantCount').textContent = tenants.length;
+            } catch (error) {
+                console.error('Error loading tenant count:', error);
+            }
+        }
+        
+        // Load property income
+        async function loadPropertyIncome() {
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/payments`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch payments');
+                }
                 
-                // Calculate occupancy rate (for multi-family, this could be more complex)
-                document.getElementById('occupancyRate').textContent = tenants.length > 0 ? '100%' : '0%';
+                const payments = await response.json();
                 
-                // Fetch payments for this property
-                const paymentsResponse = await fetch(`/api/properties/${propertyId}/payments`);
-                const payments = await paymentsResponse.json();
-                
-                // Calculate monthly income (sum of paid payments in current month)
+                // Calculate total monthly income from payments
                 const currentDate = new Date();
                 const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
                 const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
                 
-                const currentMonthPayments = payments.filter(payment => {
+                const monthlyPayments = payments.filter(payment => {
                     const paymentDate = new Date(payment.payment_date);
                     return paymentDate >= startOfMonth && paymentDate <= endOfMonth && payment.paid;
                 });
                 
-                const monthlyIncome = currentMonthPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
+                const monthlyIncome = monthlyPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
                 document.getElementById('monthlyIncome').textContent = `$${monthlyIncome}`;
-                
             } catch (error) {
-                console.error('Error loading property:', error);
-                alert('Error loading property details. Please try again.');
+                console.error('Error loading property income:', error);
             }
         }
-
-        // Save property changes
+        
+        // Handle form submission
         document.getElementById('editPropertyForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
@@ -450,39 +469,14 @@
                     throw new Error('Failed to update property');
                 }
                 
-                alert('Property updated successfully!');
+                alert('Property updated successfully');
                 window.location.href = '/view-properties.html';
-                
             } catch (error) {
                 console.error('Error updating property:', error);
                 alert('Error updating property. Please try again.');
             }
         });
-
-        // Delete property
-        document.getElementById('deletePropertyBtn').addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/properties/${propertyId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to delete property');
-                }
-                
-                alert('Property deleted successfully!');
-                window.location.href = '/view-properties.html';
-                
-            } catch (error) {
-                console.error('Error deleting property:', error);
-                alert('Error deleting property. Please try again.');
-            }
-        });
-
+        
         // Load property when page loads
         document.addEventListener('DOMContentLoaded', loadProperty);
     </script>

@@ -68,24 +68,50 @@
             color: #2c3e50;
             font-size: 2rem;
         }
-        .form-container {
+        .data-container {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 30px;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .tenant-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
         }
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .form-group.full-width {
-            grid-column: span 2;
+            grid-column: 1 / -1;
         }
         label {
             display: block;
@@ -93,7 +119,12 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        input, select, textarea {
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="email"],
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -106,17 +137,17 @@
             resize: vertical;
         }
         .form-actions {
-            margin-top: 30px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
         .btn {
-            padding: 12px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: center;
+            padding: 10px 20px;
             border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
             transition: background-color 0.3s;
         }
         .btn-primary {
@@ -153,32 +184,6 @@
             padding: 10px;
             cursor: pointer;
         }
-        
-        /* Tenant stats cards */
-        .tenant-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 15px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #3498db;
-            margin: 10px 0;
-        }
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
@@ -205,9 +210,6 @@
             }
             .form-grid {
                 grid-template-columns: 1fr;
-            }
-            .form-group.full-width {
-                grid-column: span 1;
             }
         }
     </style>
@@ -251,20 +253,16 @@
                 <div class="stat-value" id="monthlyRent">$0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Last Payment</div>
-                <div class="stat-value" id="lastPayment">$0</div>
+                <div class="stat-label">Security Deposit</div>
+                <div class="stat-value" id="securityDeposit">$0</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Payment Status</div>
                 <div class="stat-value" id="paymentStatus">-</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Lease Ends In</div>
-                <div class="stat-value" id="leaseEnds">-</div>
-            </div>
         </div>
 
-        <div class="form-container">
+        <div class="data-container">
             <form id="editTenantForm">
                 <div class="form-grid">
                     <div class="form-group">
@@ -273,7 +271,7 @@
                     </div>
                     <div class="form-group">
                         <label for="property_id">Property</label>
-                        <select id="property_id" name="property_id" required>
+                        <select id="property_id" name="property_id">
                             <option value="">Select a property</option>
                             <!-- Properties will be loaded here -->
                         </select>
@@ -284,7 +282,11 @@
                     </div>
                     <div class="form-group">
                         <label for="monthly_rent">Monthly Rent ($)</label>
-                        <input type="number" id="monthly_rent" name="monthly_rent" step="0.01" min="0">
+                        <input type="number" id="monthly_rent" name="monthly_rent" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="deposit">Security Deposit ($)</label>
+                        <input type="number" id="deposit" name="deposit" min="0" step="0.01">
                     </div>
                     <div class="form-group">
                         <label for="lease_start">Lease Start Date</label>
@@ -302,10 +304,6 @@
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email">
                     </div>
-                    <div class="form-group">
-                        <label for="deposit">Security Deposit ($)</label>
-                        <input type="number" id="deposit" name="deposit" step="0.01" min="0">
-                    </div>
                     <div class="form-group full-width">
                         <label for="notes">Notes</label>
                         <textarea id="notes" name="notes"></textarea>
@@ -313,10 +311,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-tenants.html'">Cancel</button>
-                    <div>
-                        <button type="button" id="deleteTenantBtn" class="btn btn-danger">Delete Tenant</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -337,15 +332,11 @@
             });
         });
 
-        // Get tenant ID from URL
+        // Get tenant ID from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const tenantId = urlParams.get('id');
         
-        if (!tenantId) {
-            window.location.href = '/view-tenants.html';
-        }
-
-        // Load properties for dropdown
+        // Load properties for the dropdown
         async function loadProperties() {
             try {
                 const response = await fetch('/api/properties');
@@ -359,116 +350,111 @@
                 properties.forEach(property => {
                     const option = document.createElement('option');
                     option.value = property._id;
-                    option.textContent = `${property.address}, ${property.city}`;
+                    option.textContent = `${property.address}, ${property.city} - $${property.rent}/mo`;
                     selectElement.appendChild(option);
                 });
             } catch (error) {
                 console.error('Error loading properties:', error);
             }
         }
-
+        
         // Load tenant data
         async function loadTenant() {
             try {
-                // Fetch tenant details
                 const response = await fetch(`/api/tenants/${tenantId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch tenant');
                 }
                 
                 const tenant = await response.json();
-                
-                // Update form fields
                 document.getElementById('tenantTitle').textContent = `Edit Tenant: ${tenant.name}`;
+                
+                // Fill form with tenant data
                 document.getElementById('name').value = tenant.name || '';
+                document.getElementById('property_id').value = tenant.property_id || '';
                 document.getElementById('unit_number').value = tenant.unit_number || '';
                 document.getElementById('monthly_rent').value = tenant.monthly_rent || '';
+                document.getElementById('deposit').value = tenant.deposit || '';
                 document.getElementById('phone').value = tenant.phone || '';
                 document.getElementById('email').value = tenant.email || '';
-                document.getElementById('deposit').value = tenant.deposit || '';
                 document.getElementById('notes').value = tenant.notes || '';
                 
-                // Set dates
+                // Format lease dates if they exist
                 if (tenant.lease_start) {
-                    document.getElementById('lease_start').value = new Date(tenant.lease_start).toISOString().split('T')[0];
+                    const date = new Date(tenant.lease_start);
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    document.getElementById('lease_start').value = `${yyyy}-${mm}-${dd}`;
                 }
+                
                 if (tenant.lease_end) {
-                    document.getElementById('lease_end').value = new Date(tenant.lease_end).toISOString().split('T')[0];
+                    const date = new Date(tenant.lease_end);
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    document.getElementById('lease_end').value = `${yyyy}-${mm}-${dd}`;
                 }
                 
-                // Set property dropdown
-                if (tenant.property_id) {
-                    document.getElementById('property_id').value = tenant.property_id;
-                }
-                
-                // Update tenant stats
+                // Update stats
                 document.getElementById('monthlyRent').textContent = `$${tenant.monthly_rent || 0}`;
+                document.getElementById('securityDeposit').textContent = `$${tenant.deposit || 0}`;
                 
-                // Calculate days until lease end
-                let leaseEndsText = '-';
-                if (tenant.lease_end) {
-                    const leaseEnd = new Date(tenant.lease_end);
-                    const today = new Date();
-                    const daysLeft = Math.ceil((leaseEnd - today) / (1000 * 60 * 60 * 24));
-                    leaseEndsText = daysLeft > 0 ? `${daysLeft} days` : 'Expired';
-                }
-                document.getElementById('leaseEnds').textContent = leaseEndsText;
-                
-                // Fetch payments for this tenant
-                const paymentsResponse = await fetch(`/api/tenants/${tenantId}/payments`);
-                const payments = await paymentsResponse.json();
-                
-                // Get last payment amount
-                let lastPaymentAmount = '$0';
-                let paymentStatusText = 'Unpaid';
-                
-                if (payments.length > 0) {
-                    // Sort payments by date (most recent first)
-                    payments.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
-                    lastPaymentAmount = `$${payments[0].amount || 0}`;
-                    
-                    // Check if payment was made this month
-                    const now = new Date();
-                    const currentMonth = now.getMonth();
-                    const currentYear = now.getFullYear();
-                    
-                    const hasCurrentMonthPayment = payments.some(payment => {
-                        const paymentDate = new Date(payment.payment_date);
-                        return paymentDate.getMonth() === currentMonth && 
-                               paymentDate.getFullYear() === currentYear &&
-                               payment.paid === true;
-                    });
-                    
-                    paymentStatusText = hasCurrentMonthPayment ? 'Paid' : 'Unpaid';
-                }
-                
-                document.getElementById('lastPayment').textContent = lastPaymentAmount;
-                document.getElementById('paymentStatus').textContent = paymentStatusText;
-                document.getElementById('paymentStatus').style.color = paymentStatusText === 'Paid' ? '#27ae60' : '#e74c3c';
-                
+                // Check payment status
+                checkPaymentStatus(tenant.name);
             } catch (error) {
                 console.error('Error loading tenant:', error);
-                alert('Error loading tenant details. Please try again.');
+                alert('Error loading tenant. Please try again.');
             }
         }
-
-        // Save tenant changes
+        
+        // Check payment status for the current month
+        async function checkPaymentStatus(tenantName) {
+            try {
+                const response = await fetch(`/api/payments`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch payments');
+                }
+                
+                const payments = await response.json();
+                
+                // Filter payments for the current tenant and current month
+                const currentDate = new Date();
+                const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                
+                const tenantPayments = payments.filter(payment => {
+                    const paymentDate = new Date(payment.payment_date);
+                    return payment.tenant_name === tenantName && 
+                           paymentDate >= startOfMonth && 
+                           paymentDate <= endOfMonth;
+                });
+                
+                const hasPaid = tenantPayments.some(payment => payment.paid);
+                
+                document.getElementById('paymentStatus').textContent = hasPaid ? 'Paid' : 'Not Paid';
+                document.getElementById('paymentStatus').style.color = hasPaid ? '#2ecc71' : '#e74c3c';
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+            }
+        }
+        
+        // Handle form submission
         document.getElementById('editTenantForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
             try {
-                const formData = new FormData(this);
                 const tenant = {
-                    name: formData.get('name'),
-                    property_id: formData.get('property_id'),
-                    unit_number: formData.get('unit_number'),
-                    monthly_rent: parseFloat(formData.get('monthly_rent')) || 0,
-                    lease_start: formData.get('lease_start') || null,
-                    lease_end: formData.get('lease_end') || null,
-                    phone: formData.get('phone'),
-                    email: formData.get('email'),
-                    deposit: parseFloat(formData.get('deposit')) || 0,
-                    notes: formData.get('notes')
+                    name: document.getElementById('name').value,
+                    property_id: document.getElementById('property_id').value,
+                    unit_number: document.getElementById('unit_number').value,
+                    monthly_rent: parseFloat(document.getElementById('monthly_rent').value) || 0,
+                    deposit: parseFloat(document.getElementById('deposit').value) || 0,
+                    lease_start: document.getElementById('lease_start').value || null,
+                    lease_end: document.getElementById('lease_end').value || null,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    notes: document.getElementById('notes').value
                 };
                 
                 const response = await fetch(`/api/tenants/${tenantId}`, {
@@ -483,41 +469,16 @@
                     throw new Error('Failed to update tenant');
                 }
                 
-                alert('Tenant updated successfully!');
+                alert('Tenant updated successfully');
                 window.location.href = '/view-tenants.html';
-                
             } catch (error) {
                 console.error('Error updating tenant:', error);
                 alert('Error updating tenant. Please try again.');
             }
         });
-
-        // Delete tenant
-        document.getElementById('deleteTenantBtn').addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/tenants/${tenantId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to delete tenant');
-                }
-                
-                alert('Tenant deleted successfully!');
-                window.location.href = '/view-tenants.html';
-                
-            } catch (error) {
-                console.error('Error deleting tenant:', error);
-                alert('Error deleting tenant. Please try again.');
-            }
-        });
-
+        
         // Load data when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             loadProperties();
             loadTenant();
         });

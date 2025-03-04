@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -68,24 +67,50 @@
             color: #2c3e50;
             font-size: 2rem;
         }
-        .form-container {
+        .data-container {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 30px;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .payment-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
         }
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .form-group.full-width {
-            grid-column: span 2;
+            grid-column: 1 / -1;
         }
         label {
             display: block;
@@ -93,7 +118,11 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        input, select, textarea {
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -105,26 +134,27 @@
             min-height: 100px;
             resize: vertical;
         }
-        .checkbox-group {
+        .checkbox-container {
             display: flex;
             align-items: center;
+            margin-top: 5px;
         }
-        .checkbox-group input {
-            width: auto;
+        input[type="checkbox"] {
             margin-right: 10px;
+            transform: scale(1.5);
         }
         .form-actions {
-            margin-top: 30px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
         .btn {
-            padding: 12px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: center;
+            padding: 10px 20px;
             border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
             transition: background-color 0.3s;
         }
         .btn-primary {
@@ -147,29 +177,6 @@
         }
         .btn-danger:hover {
             background-color: #c0392b;
-        }
-        .payment-info {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .payment-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        .info-item {
-            margin-bottom: 10px;
-        }
-        .info-label {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 5px;
-        }
-        .info-value {
-            font-weight: bold;
-            font-size: 1.1rem;
         }
         .hamburger-menu {
             display: none;
@@ -211,9 +218,6 @@
             .form-grid {
                 grid-template-columns: 1fr;
             }
-            .form-group.full-width {
-                grid-column: span 1;
-            }
         }
     </style>
 </head>
@@ -250,37 +254,29 @@
     <div class="main-content">
         <h1 class="page-title" id="paymentTitle">Edit Payment</h1>
 
-        <div class="payment-info">
-            <h3>Payment Information</h3>
-            <div class="payment-info-grid">
-                <div class="info-item">
-                    <div class="info-label">Tenant</div>
-                    <div class="info-value" id="infoTenant">-</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Property</div>
-                    <div class="info-value" id="infoProperty">-</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Payment ID</div>
-                    <div class="info-value" id="infoPaymentId">-</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Created On</div>
-                    <div class="info-value" id="infoCreatedDate">-</div>
-                </div>
+        <div class="payment-stats">
+            <div class="stat-card">
+                <div class="stat-label">Payment Status</div>
+                <div class="stat-value" id="paymentStatus">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Payment Type</div>
+                <div class="stat-value" id="paymentTypeDisplay">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Payment Method</div>
+                <div class="stat-value" id="paymentMethodDisplay">-</div>
             </div>
         </div>
 
-        <div class="form-container">
+        <div class="data-container">
             <form id="editPaymentForm">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="tenant_name">Tenant</label>
-                        <select id="tenant_name" name="tenant_name" required>
-                            <option value="">Select a tenant</option>
-                            <!-- Tenants will be loaded here -->
-                        </select>
+                        <label for="tenant_name">Tenant Name</label>
+                        <input type="text" id="tenant_name" name="tenant_name" readonly>
+                        <input type="hidden" id="tenant_id" name="tenant_id">
+                        <input type="hidden" id="property_id" name="property_id">
                     </div>
                     <div class="form-group">
                         <label for="payment_date">Payment Date</label>
@@ -288,7 +284,7 @@
                     </div>
                     <div class="form-group">
                         <label for="amount">Amount ($)</label>
-                        <input type="number" id="amount" name="amount" step="0.01" min="0" required>
+                        <input type="number" id="amount" name="amount" min="0" step="0.01" required>
                     </div>
                     <div class="form-group">
                         <label for="payment_type">Payment Type</label>
@@ -310,9 +306,12 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <div class="form-group checkbox-group">
-                        <input type="checkbox" id="paid" name="paid">
-                        <label for="paid">Payment Received</label>
+                    <div class="form-group">
+                        <label>Payment Received</label>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="paid" name="paid">
+                            <label for="paid">Mark as paid</label>
+                        </div>
                     </div>
                     <div class="form-group full-width">
                         <label for="notes">Notes</label>
@@ -321,10 +320,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-payments.html'">Cancel</button>
-                    <div>
-                        <button type="button" id="deletePaymentBtn" class="btn btn-danger">Delete Payment</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -345,114 +341,68 @@
             });
         });
 
-        // Get payment ID from URL
+        // Get payment ID from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const paymentId = urlParams.get('id');
-        
-        if (!paymentId) {
-            window.location.href = '/view-payments.html';
-        }
-
-        // Load tenants for dropdown
-        async function loadTenants() {
-            try {
-                const response = await fetch('/api/tenants');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch tenants');
-                }
-                
-                const tenants = await response.json();
-                const selectElement = document.getElementById('tenant_name');
-                
-                tenants.forEach(tenant => {
-                    const option = document.createElement('option');
-                    option.value = tenant.name;
-                    option.textContent = tenant.name;
-                    selectElement.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading tenants:', error);
-            }
-        }
 
         // Load payment data
         async function loadPayment() {
             try {
-                // Fetch payment details
                 const response = await fetch(`/api/payments/${paymentId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch payment');
                 }
-                
+
                 const payment = await response.json();
-                
-                // Update form fields
                 document.getElementById('paymentTitle').textContent = `Edit Payment for ${payment.tenant_name}`;
+
+                // Fill form with payment data
                 document.getElementById('tenant_name').value = payment.tenant_name || '';
+                document.getElementById('tenant_id').value = payment.tenant_id || '';
+                document.getElementById('property_id').value = payment.property_id || '';
                 document.getElementById('amount').value = payment.amount || '';
                 document.getElementById('payment_type').value = payment.payment_type || 'Rent';
                 document.getElementById('payment_method').value = payment.payment_method || 'Cash';
                 document.getElementById('notes').value = payment.notes || '';
                 document.getElementById('paid').checked = payment.paid === true;
-                
+
                 // Set payment date
                 if (payment.payment_date) {
-                    document.getElementById('payment_date').value = new Date(payment.payment_date).toISOString().split('T')[0];
+                    const date = new Date(payment.payment_date);
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    document.getElementById('payment_date').value = `${yyyy}-${mm}-${dd}`;
                 }
-                
-                // Update payment info
-                document.getElementById('infoTenant').textContent = payment.tenant_name || '-';
-                document.getElementById('infoPaymentId').textContent = payment._id || '-';
-                
-                if (payment.created_at) {
-                    document.getElementById('infoCreatedDate').textContent = new Date(payment.created_at).toLocaleDateString();
-                }
-                
-                // If there's property info, fetch and display it
-                if (payment.property_id) {
-                    try {
-                        const propertyResponse = await fetch(`/api/properties/${payment.property_id}`);
-                        const property = await propertyResponse.json();
-                        document.getElementById('infoProperty').textContent = property.address || '-';
-                    } catch (error) {
-                        console.error('Error fetching property details:', error);
-                    }
-                }
-                
+
+                // Update stats displays
+                document.getElementById('paymentStatus').textContent = payment.paid ? 'Paid' : 'Not Paid';
+                document.getElementById('paymentStatus').style.color = payment.paid ? '#2ecc71' : '#e74c3c';
+                document.getElementById('paymentTypeDisplay').textContent = payment.payment_type || 'Rent';
+                document.getElementById('paymentMethodDisplay').textContent = payment.payment_method || 'Cash';
             } catch (error) {
                 console.error('Error loading payment:', error);
-                alert('Error loading payment details. Please try again.');
+                alert('Error loading payment. Please try again.');
             }
         }
 
-        // Save payment changes
+        // Handle form submission
         document.getElementById('editPaymentForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            
+
             try {
-                const formData = new FormData(this);
-                
-                // Find tenant to get property_id
-                const tenantResponse = await fetch('/api/tenants');
-                const tenants = await tenantResponse.json();
-                const tenant = tenants.find(t => t.name === formData.get('tenant_name'));
-                
-                if (!tenant) {
-                    throw new Error('Selected tenant not found');
-                }
-                
                 const payment = {
-                    tenant_name: formData.get('tenant_name'),
-                    tenant_id: tenant._id,
-                    property_id: tenant.property_id,
-                    payment_date: formData.get('payment_date'),
-                    amount: parseFloat(formData.get('amount')) || 0,
-                    payment_type: formData.get('payment_type'),
-                    payment_method: formData.get('payment_method'),
+                    tenant_name: document.getElementById('tenant_name').value,
+                    tenant_id: document.getElementById('tenant_id').value,
+                    property_id: document.getElementById('property_id').value,
+                    payment_date: document.getElementById('payment_date').value,
+                    amount: parseFloat(document.getElementById('amount').value) || 0,
+                    payment_type: document.getElementById('payment_type').value,
+                    payment_method: document.getElementById('payment_method').value,
                     paid: document.getElementById('paid').checked,
-                    notes: formData.get('notes')
+                    notes: document.getElementById('notes').value
                 };
-                
+
                 const response = await fetch(`/api/payments/${paymentId}`, {
                     method: 'PUT',
                     headers: {
@@ -460,49 +410,21 @@
                     },
                     body: JSON.stringify(payment)
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to update payment');
                 }
-                
-                alert('Payment updated successfully!');
+
+                alert('Payment updated successfully');
                 window.location.href = '/view-payments.html';
-                
             } catch (error) {
                 console.error('Error updating payment:', error);
                 alert('Error updating payment. Please try again.');
             }
         });
 
-        // Delete payment
-        document.getElementById('deletePaymentBtn').addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/payments/${paymentId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to delete payment');
-                }
-                
-                alert('Payment deleted successfully!');
-                window.location.href = '/view-payments.html';
-                
-            } catch (error) {
-                console.error('Error deleting payment:', error);
-                alert('Error deleting payment. Please try again.');
-            }
-        });
-
         // Load data when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTenants();
-            loadPayment();
-        });
+        document.addEventListener('DOMContentLoaded', loadPayment);
     </script>
 </body>
 </html>

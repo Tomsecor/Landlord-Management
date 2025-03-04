@@ -13,198 +13,330 @@
             padding: 0;
             background-color: #f4f6f9;
             color: #333;
+            display: flex;
+            min-height: 100vh;
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-        }
-        header {
+        .sidebar {
+            width: 250px;
             background-color: #2c3e50;
             color: white;
             padding: 20px 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
         }
-        h1 {
-            margin: 0;
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo h2 {
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+        .logo-icon {
             font-size: 2.5rem;
+            color: #3498db;
         }
-        .form-container {
+        .nav-menu {
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid #3498db;
+        }
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .page-title {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        .data-container {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 30px;
-            margin: 30px auto;
-            max-width: 600px;
-            text-align: left;
+            padding: 20px;
+            overflow: hidden;
         }
         form {
             display: flex;
             flex-direction: column;
         }
-        .form-row {
-            display: flex;
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 15px;
-            margin-bottom: 15px;
         }
         .form-group {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
         }
         label {
+            display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            color: #2c3e50;
         }
-        input[type="text"], input[type="number"], input[type="date"], select, textarea {
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            box-sizing: border-box;
         }
         textarea {
+            min-height: 100px;
             resize: vertical;
-            min-height: 80px;
         }
-        input[type="submit"] {
-            background-color: #3498db;
-            color: white;
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
             border: none;
-            padding: 12px;
-            font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 20px;
+            font-size: 16px;
             transition: background-color 0.3s;
         }
-        input[type="submit"]:hover {
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
             background-color: #2980b9;
         }
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #3498db;
-            text-decoration: none;
-            font-weight: bold;
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
         }
-        .back-link:hover {
-            text-decoration: underline;
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
         }
-        .icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #3498db;
-        }
-        footer {
-            margin-top: 50px;
-            padding: 20px;
+        .hamburger-menu {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
             background-color: #2c3e50;
             color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100%;
+                z-index: 100;
+                transition: left 0.3s ease;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .main-content {
+                margin-top: 60px;
+            }
+            .hamburger-menu {
+                display: block;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Add New Property</h1>
-            <p>Register a new property in your portfolio</p>
+    <button class="hamburger-menu" id="menuToggle">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🏢</div>
+            <h2>Landlord Manager</h2>
         </div>
-    </header>
-    
-    <div class="container">
-        <div class="icon">🏠</div>
-        
-        <div class="form-container">
-            <form action="/api/properties" method="post">
-                <div class="form-row">
+        <nav class="nav-menu">
+            <a href="/" class="menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="/view-properties.html" class="menu-item active">
+                <i>🏠</i> Properties
+            </a>
+            <a href="/view-tenants.html" class="menu-item">
+                <i>👥</i> Tenants
+            </a>
+            <a href="/view-payments.html" class="menu-item">
+                <i>💵</i> Payments
+            </a>
+            <a href="#" class="menu-item">
+                <i>📑</i> Reports
+            </a>
+            <a href="#" class="menu-item">
+                <i>⚙️</i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">Add New Property</h1>
+
+        <div class="data-container">
+            <form id="addPropertyForm" action="/api/properties" method="post">
+                <div class="form-grid">
                     <div class="form-group">
-                        <label for="address">Street Address:</label>
+                        <label for="address">Address</label>
                         <input type="text" id="address" name="address" required>
                     </div>
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="city">City:</label>
+                        <label for="city">City</label>
                         <input type="text" id="city" name="city" required>
                     </div>
                     <div class="form-group">
-                        <label for="state">State:</label>
+                        <label for="state">State</label>
                         <input type="text" id="state" name="state" required>
                     </div>
                     <div class="form-group">
-                        <label for="zip">ZIP Code:</label>
+                        <label for="zip">Zip Code</label>
                         <input type="text" id="zip" name="zip" required>
                     </div>
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="type">Property Type:</label>
+                        <label for="type">Property Type</label>
                         <select id="type" name="type">
                             <option value="Single Family">Single Family</option>
-                            <option value="Multi-Family">Multi-Family</option>
-                            <option value="Apartment">Apartment</option>
+                            <option value="Multi Family">Multi Family</option>
                             <option value="Condo">Condo</option>
-                            <option value="Townhouse">Townhouse</option>
+                            <option value="Apartment">Apartment</option>
                             <option value="Commercial">Commercial</option>
                         </select>
                     </div>
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="bedrooms">Bedrooms:</label>
-                        <input type="number" id="bedrooms" name="bedrooms" min="0" step="1">
+                        <label for="bedrooms">Bedrooms</label>
+                        <input type="number" id="bedrooms" name="bedrooms" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="bathrooms">Bathrooms:</label>
+                        <label for="bathrooms">Bathrooms</label>
                         <input type="number" id="bathrooms" name="bathrooms" min="0" step="0.5">
                     </div>
                     <div class="form-group">
-                        <label for="sqft">Square Footage:</label>
+                        <label for="rent">Monthly Rent ($)</label>
+                        <input type="number" id="rent" name="rent" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="sqft">Square Feet</label>
                         <input type="number" id="sqft" name="sqft" min="0">
                     </div>
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="rent">Monthly Rent ($):</label>
-                        <input type="number" id="rent" name="rent" min="0" step="0.01" required>
+                        <label for="purchase_price">Purchase Price ($)</label>
+                        <input type="number" id="purchase_price" name="purchase_price" step="0.01" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="purchase_price">Purchase Price ($):</label>
-                        <input type="number" id="purchase_price" name="purchase_price" min="0" step="0.01">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="purchase_date">Purchase Date:</label>
+                        <label for="purchase_date">Purchase Date</label>
                         <input type="date" id="purchase_date" name="purchase_date">
                     </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="notes">Notes:</label>
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
                         <textarea id="notes" name="notes"></textarea>
                     </div>
                 </div>
-                
-                <input type="submit" value="Add Property">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-properties.html'">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Property</button>
+                </div>
             </form>
         </div>
-        
-        <a href="/" class="back-link">← Back to Home</a>
     </div>
-    
-    <footer>
-        <div class="container">
-            <p>Landlord Management App &copy; 2023</p>
-        </div>
-    </footer>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+
+        // Close sidebar when clicking on a menu item (mobile)
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
+            });
+        });
+
+        // Handle form submission
+        document.getElementById('addPropertyForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = new FormData(this);
+                const propertyData = {
+                    address: formData.get('address'),
+                    city: formData.get('city'),
+                    state: formData.get('state'),
+                    zip: formData.get('zip'),
+                    type: formData.get('type'),
+                    bedrooms: parseInt(formData.get('bedrooms')) || 0,
+                    bathrooms: parseFloat(formData.get('bathrooms')) || 0,
+                    rent: parseFloat(formData.get('rent')) || 0,
+                    sqft: parseInt(formData.get('sqft')) || 0,
+                    purchase_price: parseFloat(formData.get('purchase_price')) || 0,
+                    purchase_date: formData.get('purchase_date') || null,
+                    notes: formData.get('notes') || ''
+                };
+                
+                const response = await fetch('/api/properties', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(propertyData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add property');
+                }
+                
+                alert('Property added successfully');
+                window.location.href = '/view-properties.html';
+            } catch (error) {
+                console.error('Error adding property:', error);
+                alert('Error adding property. Please try again.');
+            }
+        });
+    </script>
 </body>
 </html>
