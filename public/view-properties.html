@@ -332,6 +332,7 @@
                             </td>
                         </tr>
                     `;
+                    loadTodoCounts(property);
                 });
             } catch (error) {
                 console.error('Error loading properties:', error);
@@ -397,6 +398,20 @@
                 }
             });
         });
+
+        // Add this function to load todo counts
+        async function loadTodoCounts(property) {
+            try {
+                const response = await fetch(`/api/properties/${property._id}/todo-stats`);
+                const stats = await response.json();
+                const countElement = document.getElementById(`todo-count-${property._id}`);
+                if (countElement) {
+                    countElement.textContent = `${stats.total} todos (${stats.completed} completed)`;
+                }
+            } catch (error) {
+                console.error('Error loading todo stats:', error);
+            }
+        }
 
         // Load properties when page loads
         document.addEventListener('DOMContentLoaded', loadProperties);

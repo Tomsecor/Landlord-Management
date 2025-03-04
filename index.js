@@ -1,5 +1,11 @@
-const { MongoClient } = require("mongodb");
+const dotenv = require('dotenv');
 
+// Load environment variables from .env file
+dotenv.config();
+console.log(process.env.DATABASE_URL); // Outputs: mongodb://localhost:27017/myapp
+
+
+const { MongoClient } = require("mongodb");
 
 async function connectToDatabase() {
   const uri = process.env.MONGO_URI;
@@ -17,7 +23,6 @@ async function connectToDatabase() {
     throw error;
   }
 }
-
 
 const express = require('express');
 const app = express();
@@ -578,6 +583,149 @@ app.get('/api/statistics', async (req, res) => {
   } catch (error) {
     console.error('Error fetching statistics:', error);
     res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// API endpoints for todos
+// Get all todos for a property
+app.get('/api/properties/:id/todos', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    
+    let query = { Properties_id: new ObjectId(req.params.id) }; // Changed from property_id to Properties_id
+    
+    if (req.query.priority) {
+      query.priority = req.query.priority;
+    }
+    
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    
+    const todos = await todosCollection.find(query)
+      .sort({ due_date: 1 })
+      .toArray();
+      
+    res.json(todos);
+  } catch (error) {
+    console.error('Error fetching todos:', error);
+    res.status(500).json({ error: 'Failed to fetch todos' });
+  }
+});
+
+// Add a new todo
+app.post('/api/todos', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    
+    const todo = {
+      Properties_id: new ObjectId(req.body.Properties_id), // Changed from property_id
+      title: req.body.title,
+      description: req.body.description || '',
+      due_date: req.body.due_date ? new Date(req.body.due_date) : null,
+      priority: req.body.priority || 'medium',
+      status: req.body.status || 'pending',
+      assigned_to: req.body.assigned_to || '',
+      estimated_cost: parseFloat(req.body.estimated_cost) || 0,
+      created_at: new Date()
+    };
+
+    const result = await todosCollection.insertOne(todo);
+    res.status(201).json({ message: 'Todo added successfully', id: result.insertedId });
+  } catch (error) {
+    console.error('Error adding todo:', error);
+    res.status(500).json({ error: 'Failed to add todo' });
+  }
+});
+
+// Update a todo
+app.put('/api/todos/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    
+    const todo = {
+      title: req.body.title,
+      description: req.body.description || '',
+      due_date: req.body.due_date ? new Date(req.body.due_date) : null,
+      priority: req.body.priority || 'medium',
+      status: req.body.status || 'pending',
+      assigned_to: req.body.assigned_to || '',
+      estimated_cost: parseFloat(req.body.estimated_cost) || 0,
+      updated_at: new Date()
+    };
+
+    const result = await todosCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: todo }
+    );
+
+    if (result.matchedCount === 1) {
+      res.json({ message: 'Todo updated successfully' });
+    } else {
+      res.status(404).json({ error: 'Todo not found' });
+    }
+  } catch (error) {
+    console.error('Error updating todo:', error);
+    res.status(500).json({ error: 'Failed to update todo' });
+  }
+});
+
+// Delete a todo
+app.delete('/api/todos/:id', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    const result = await todosCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+
+    if (result.deletedCount === 1) {
+      res.json({ message: 'Todo deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Todo not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting todo:', error);
+    res.status(500).json({ error: 'Failed to delete todo' });
+  }
+});
+
+// Get todo statistics for a property
+app.get('/api/properties/:id/todo-stats', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    
+    const PropertiesId = new ObjectId(req.params.id); // Changed from propertyId
+    
+    const stats = await todosCollection.aggregate([
+      { $match: { Properties_id: PropertiesId } }, // Changed from property_id
+      { $group: {
+        _id: null,
+        total: { $sum: 1 },
+        completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+        highPriority: { $sum: { $cond: [{ $eq: ["$priority", "high"] }, 1, 0] } },
+        totalEstimatedCost: { $sum: "$estimated_cost" }
+      }}
+    ]).toArray();
+    
+    const result = stats[0] || {
+      total: 0,
+      completed: 0,
+      highPriority: 0,
+      totalEstimatedCost: 0
+    };
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching todo statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch todo statistics' });
   }
 });
 

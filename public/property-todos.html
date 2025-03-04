@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Todos - Landlord App</title>
+    <style>
+        /* Reuse existing styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Todo-specific styles */
+        .todo-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .todo-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .todo-item.high-priority {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .todo-item.medium-priority {
+            border-left: 4px solid #f39c12;
+        }
+
+        .todo-item.low-priority {
+            border-left: 4px solid #2ecc71;
+        }
+
+        .todo-details h3 {
+            margin: 0 0 5px 0;
+        }
+
+        .todo-meta {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-pending { background: #f1c40f; color: #000; }
+        .status-in-progress { background: #3498db; color: #fff; }
+        .status-completed { background: #2ecc71; color: #fff; }
+    </style>
+</head>
+<body>
+    <button class="hamburger-menu" id="menuToggle">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <!-- Existing sidebar content -->
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">Property Todos</h1>
+
+        <div class="data-container">
+            <div class="filters">
+                <select id="priorityFilter">
+                    <option value="">All Priorities</option>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" onclick="showAddTodoModal()">Add Todo</button>
+            
+            <div class="todo-list" id="todoList">
+                <!-- Todos will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Todo Modal -->
+    <div id="todoModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Add Todo</h2>
+            <form id="todoForm">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input type="date" id="due_date" name="due_date">
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="assigned_to">Assigned To</label>
+                    <input type="text" id="assigned_to" name="assigned_to">
+                </div>
+                <div class="form-group">
+                    <label for="estimated_cost">Estimated Cost ($)</label>
+                    <input type="number" id="estimated_cost" name="estimated_cost" min="0" step="0.01">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const PropertiesId = new URLSearchParams(window.location.search).get('id');
+        let todos = [];
+
+        // Load todos
+        async function loadTodos() {
+            try {
+                const response = await fetch(`/api/properties/${PropertiesId}/todos`);
+                if (!response.ok) throw new Error('Failed to fetch todos');
+                
+                todos = await response.json();
+                displayTodos(todos);
+            } catch (error) {
+                console.error('Error loading todos:', error);
+            }
+        }
+
+        // Display todos
+        function displayTodos(todos) {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = todos.map(todo => `
+                <div class="todo-item ${todo.priority}-priority">
+                    <div class="todo-details">
+                        <h3>${todo.title}</h3>
+                        <div class="todo-meta">
+                            <span class="status-badge status-${todo.status}">${todo.status}</span>
+                            <span>Due: ${new Date(todo.due_date).toLocaleDateString()}</span>
+                            ${todo.assigned_to ? `<span>Assigned to: ${todo.assigned_to}</span>` : ''}
+                            <span>Est. Cost: $${todo.estimated_cost}</span>
+                        </div>
+                        <p>${todo.description}</p>
+                    </div>
+                    <div class="todo-actions">
+                        <button onclick="editTodo('${todo._id}')">Edit</button>
+                        <button onclick="deleteTodo('${todo._id}')">Delete</button>
+                        <button onclick="updateStatus('${todo._id}', '${getNextStatus(todo.status)}')">
+                            ${getNextStatusLabel(todo.status)}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add event listeners for filters
+        document.getElementById('statusFilter').addEventListener('change', displayTodos);
+        document.getElementById('priorityFilter').addEventListener('change', displayTodos);
+
+        // Load todos when page loads
+        document.addEventListener('DOMContentLoaded', loadTodos);
+
+        // ... Add the rest of the JavaScript for handling the modal and CRUD operations
+    </script>
+</body>
+</html>
