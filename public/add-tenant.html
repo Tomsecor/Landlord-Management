@@ -158,6 +158,21 @@
                             selectElement.appendChild(option);
                         });
                         
+                        // Check if property_id is in URL (coming from property view)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const propertyId = urlParams.get('property_id');
+                        
+                        if (propertyId) {
+                            // Pre-select the property in dropdown
+                            selectElement.value = propertyId;
+                            
+                            // Set rent for the selected property
+                            const selectedProperty = properties.find(p => p._id === propertyId);
+                            if (selectedProperty) {
+                                document.getElementById('monthly_rent').value = selectedProperty.rent || '';
+                            }
+                        }
+                        
                         // Set default rent from property selection
                         selectElement.addEventListener('change', function() {
                             const selectedProperty = properties.find(p => p._id === this.value);

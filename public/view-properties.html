@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -172,7 +171,7 @@
             padding: 10px;
             cursor: pointer;
         }
-        
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             body {
@@ -204,7 +203,7 @@
 </head>
 <body>
     <button class="hamburger-menu" id="menuToggle">☰</button>
-    
+
     <div class="sidebar" id="sidebar">
         <div class="logo">
             <div class="logo-icon">🏢</div>
@@ -231,10 +230,10 @@
             </a>
         </nav>
     </div>
-    
+
     <div class="main-content">
         <h1 class="page-title">Property List</h1>
-        
+
         <div class="data-container">
             <div class="toolbar">
                 <div class="search-bar">
@@ -245,7 +244,7 @@
                     <button id="addPropertyBtn" onclick="window.location.href='/add-property.html'">+ Add Property</button>
                 </div>
             </div>
-            
+
             <div class="table-container">
                 <table id="propertiesTable">
                     <thead>
@@ -267,13 +266,13 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Mobile menu toggle
         document.getElementById('menuToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
         });
-        
+
         // Close sidebar when clicking on a menu item (mobile)
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', function() {
@@ -282,7 +281,7 @@
                 }
             });
         });
-        
+
         // Load properties data
         async function loadProperties() {
             try {
@@ -290,19 +289,19 @@
                 if (!response.ok) {
                     throw new Error('Failed to fetch properties');
                 }
-                
+
                 const properties = await response.json();
                 const tableBody = document.getElementById('propertiesTableBody');
-                
+
                 if (properties.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No properties found. Add your first property!</td></tr>';
                     return;
                 }
-                
+
                 // Get all tenants to check which properties are occupied
                 const tenantsResponse = await fetch('/api/tenants');
                 const tenants = await tenantsResponse.json();
-                
+
                 // Map of property IDs to tenant counts
                 const propertyOccupancy = {};
                 tenants.forEach(tenant => {
@@ -310,14 +309,14 @@
                         propertyOccupancy[tenant.property_id] = (propertyOccupancy[tenant.property_id] || 0) + 1;
                     }
                 });
-                
+
                 tableBody.innerHTML = '';
                 properties.forEach(property => {
                     const isOccupied = propertyOccupancy[property._id] > 0;
                     const status = isOccupied ? 
                         `<span class="status status-occupied">Occupied</span>` : 
                         `<span class="status status-vacant">Vacant</span>`;
-                    
+
                     tableBody.innerHTML += `
                         <tr data-id="${property._id}">
                             <td>${property.address}, ${property.city}, ${property.state} ${property.zip}</td>
@@ -327,6 +326,9 @@
                             <td class="actions">
                                 <button class="edit-btn" onclick="editProperty('${property._id}')">✏️</button>
                                 <button class="delete-btn" onclick="deleteProperty('${property._id}')">🗑️</button>
+                                <button class="view-tenants-btn" onclick="viewTenants('${property._id}')">👥</button>
+                                <button class="view-payments-btn" onclick="viewPayments('${property._id}')">💵</button>
+                                <button class="add-tenant-btn" onclick="addTenant('${property._id}')">➕</button>
                             </td>
                         </tr>
                     `;
@@ -337,22 +339,22 @@
                     '<tr><td colspan="5" style="text-align: center;">Error loading properties. Please try again.</td></tr>';
             }
         }
-        
+
         // Delete property function
         async function deleteProperty(id) {
             if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/properties/${id}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to delete property');
                 }
-                
+
                 // Reload properties after deletion
                 loadProperties();
             } catch (error) {
@@ -360,17 +362,32 @@
                 alert('Error deleting property. Please try again.');
             }
         }
-        
+
         // Edit property function (redirects to edit page)
         function editProperty(id) {
             window.location.href = `/edit-property.html?id=${id}`;
         }
-        
+
+        //View Tenants Function
+        function viewTenants(id){
+            window.location.href = `/view-tenants.html?property_id=${id}`;
+        }
+
+        //View Payments Function
+        function viewPayments(id){
+            window.location.href = `/view-payments.html?property_id=${id}`;
+        }
+
+        //Add Tenant Function
+        function addTenant(id){
+            window.location.href = `/add-tenant.html?property_id=${id}`;
+        }
+
         // Search functionality
         document.getElementById('searchBtn').addEventListener('click', function() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('#propertiesTableBody tr');
-            
+
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 if (text.includes(searchTerm)) {
@@ -380,7 +397,7 @@
                 }
             });
         });
-        
+
         // Load properties when page loads
         document.addEventListener('DOMContentLoaded', loadProperties);
     </script>

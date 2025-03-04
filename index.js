@@ -30,10 +30,18 @@ app.post('/tenants', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
+    const propertiesCollection = db.collection('properties');
+    
+    // Check if property exists
+    const property = await propertiesCollection.findOne({ _id: new require('mongodb').ObjectId(req.body.property_id) });
+    if (!property && req.body.property_id) {
+      return res.status(400).send('Selected property does not exist');
+    }
+    
     const tenant = {
       name: req.body.name,
       unit_number: req.body.unit_number,
-      property_id: req.body.property_id || null,
+      property_id: req.body.property_id ? new require('mongodb').ObjectId(req.body.property_id) : null,
       lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
       lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
       monthly_rent: parseFloat(req.body.monthly_rent) || 0,
@@ -59,14 +67,16 @@ app.post('/payments', async (req, res) => {
     
     // Find tenant to get property_id
     const tenant = await tenantsCollection.findOne({ name: req.body.tenant_name });
-    const property_id = tenant ? tenant.property_id : null;
+    if (!tenant) {
+      return res.status(400).send('Selected tenant does not exist');
+    }
     
     const payment = {
       tenant_name: req.body.tenant_name,
-      tenant_id: tenant ? tenant._id : null,
-      property_id: property_id,
+      tenant_id: tenant._id,
+      property_id: tenant.property_id,
       payment_date: new Date(req.body.payment_date),
-      amount: parseFloat(req.body.amount) || tenant?.monthly_rent || 0,
+      amount: parseFloat(req.body.amount) || tenant.monthly_rent || 0,
       payment_type: req.body.payment_type || 'Rent',
       payment_method: req.body.payment_method || 'Cash',
       paid: req.body.paid === 'on', // Checkbox value
@@ -87,9 +97,14 @@ app.get('/api/tenants', async (req, res) => {
     const db = await connectToDatabase();
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
+    const propertiesCollection = db.collection('properties');
     
-    // Get all tenants
-    const tenants = await tenantsCollection.find().toArray();
+    // Get property filter if provided
+    const propertyId = req.query.property_id;
+    const query = propertyId ? { property_id: new require('mongodb').ObjectId(propertyId) } : {};
+    
+    // Get all tenants (filtered by property if requested)
+    const tenants = await tenantsCollection.find(query).toArray();
     
     // Get current month payment status for each tenant
     const currentDate = new Date();
@@ -105,9 +120,19 @@ app.get('/api/tenants', async (req, res) => {
         }
       });
       
+      // Get property information
+      let propertyInfo = null;
+      if (tenant.property_id) {
+        propertyInfo = await propertiesCollection.findOne({ _id: tenant.property_id });
+      }
+      
       return {
         ...tenant,
-        paymentStatus: payment && payment.paid ? 'Paid' : 'Not Paid'
+        paymentStatus: payment && payment.paid ? 'Paid' : 'Not Paid',
+        propertyInfo: propertyInfo ? {
+          address: propertyInfo.address,
+          city: propertyInfo.city
+        } : null
       };
     }));
     
@@ -123,11 +148,70 @@ app.get('/api/payments', async (req, res) => {
   try {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
-    const payments = await paymentsCollection.find().toArray();
-    res.json(payments);
+    const tenantsCollection = db.collection('tenants');
+    const propertiesCollection = db.collection('properties');
+    
+    // Get property filter if provided
+    const propertyId = req.query.property_id;
+    const query = propertyId ? { property_id: new require('mongodb').ObjectId(propertyId) } : {};
+    
+    // Get all payments (filtered by property if requested)
+    const payments = await paymentsCollection.find(query).toArray();
+    
+    // Enhance payments with property and tenant info
+    const enhancedPayments = await Promise.all(payments.map(async (payment) => {
+      let propertyInfo = null;
+      if (payment.property_id) {
+        propertyInfo = await propertiesCollection.findOne({ _id: payment.property_id });
+      }
+      
+      return {
+        ...payment,
+        propertyInfo: propertyInfo ? {
+          address: propertyInfo.address,
+          city: propertyInfo.city
+        } : null
+      };
+    }));
+    
+    res.json(enhancedPayments);
   } catch (error) {
     console.error('Error fetching payments:', error);
     res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+// API endpoint to get tenants by property
+app.get('/api/properties/:id/tenants', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const tenantsCollection = db.collection('tenants');
+    
+    const tenants = await tenantsCollection.find({ 
+      property_id: new require('mongodb').ObjectId(req.params.id) 
+    }).toArray();
+    
+    res.json(tenants);
+  } catch (error) {
+    console.error('Error fetching property tenants:', error);
+    res.status(500).json({ error: 'Failed to fetch property tenants' });
+  }
+});
+
+// API endpoint to get payments by property
+app.get('/api/properties/:id/payments', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const paymentsCollection = db.collection('payments');
+    
+    const payments = await paymentsCollection.find({ 
+      property_id: new require('mongodb').ObjectId(req.params.id) 
+    }).toArray();
+    
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching property payments:', error);
+    res.status(500).json({ error: 'Failed to fetch property payments' });
   }
 });
 
