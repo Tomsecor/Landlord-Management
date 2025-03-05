@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Todo - Landlord App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo h2 {
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+        .logo-icon {
+            font-size: 2.5rem;
+            color: #3498db;
+        }
+        .nav-menu {
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid #3498db;
+        }
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .page-title {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        .data-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            overflow: hidden;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .hamburger-menu {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100%;
+                z-index: 100;
+                transition: left 0.3s ease;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .main-content {
+                margin-top: 60px;
+            }
+            .hamburger-menu {
+                display: block;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="hamburger-menu" id="menuToggle">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🏢</div>
+            <h2>Landlord Manager</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="/" class="menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="/view-properties.html" class="menu-item">
+                <i>🏠</i> Properties
+            </a>
+            <a href="/view-tenants.html" class="menu-item">
+                <i>👥</i> Tenants
+            </a>
+            <a href="/view-payments.html" class="menu-item">
+                <i>💵</i> Payments
+            </a>
+            <a href="/view-todos.html" class="menu-item active">
+                <i>✓</i> Todos
+            </a>
+            <a href="#" class="menu-item">
+                <i>⚙️</i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">Add New Todo</h1>
+
+        <div class="data-container">
+            <form id="addTodoForm" action="/api/todos" method="post">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="Properties_id">Property</label>
+                        <select id="Properties_id" name="Properties_id" required>
+                            <option value="">Select a property</option>
+                            <!-- Properties will be loaded here -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="pending" selected>Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assigned_to">Assigned To</label>
+                        <input type="text" id="assigned_to" name="assigned_to">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estimated_cost">Estimated Cost ($)</label>
+                        <input type="number" id="estimated_cost" name="estimated_cost" min="0" step="0.01">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-todos.html'">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Todo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load properties for the dropdown
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/properties');
+                const properties = await response.json();
+                const select = document.getElementById('Properties_id');
+
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = property.address;
+                    select.appendChild(option);
+                });
+
+                // Set property if provided in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const propertyId = urlParams.get('property_id');
+                if (propertyId) {
+                    select.value = propertyId;
+                }
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        // Form submission handler
+        document.getElementById('addTodoForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = new FormData(this);
+                const todoData = {
+                    Properties_id: formData.get('Properties_id'),
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    due_date: formData.get('due_date'),
+                    priority: formData.get('priority'),
+                    status: formData.get('status'),
+                    assigned_to: formData.get('assigned_to'),
+                    estimated_cost: parseFloat(formData.get('estimated_cost')) || 0
+                };
+                
+                const response = await fetch('/api/todos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(todoData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add todo');
+                }
+                
+                alert('Todo added successfully');
+                window.location.href = '/view-todos.html';
+            } catch (error) {
+                console.error('Error adding todo:', error);
+                alert('Error adding todo. Please try again.');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadProperties);
+
+        // Mobile menu toggle
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>
