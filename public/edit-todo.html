@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Todo - Landlord App</title>
+    <style>
+        /* Base styles from view-properties.html */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ...existing sidebar styles... */
+
+        /* Form specific styles */
+        .form-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 800px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-container {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="hamburger-menu" id="menuToggle">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🏢</div>
+            <h2>Landlord Manager</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="/" class="menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="/view-properties.html" class="menu-item">
+                <i>🏠</i> Properties
+            </a>
+            <a href="/view-tenants.html" class="menu-item">
+                <i>👥</i> Tenants
+            </a>
+            <a href="/view-payments.html" class="menu-item">
+                <i>💵</i> Payments
+            </a>
+            <a href="/view-todos.html" class="menu-item active">
+                <i>✓</i> Todos
+            </a>
+            <a href="#" class="menu-item">
+                <i>⚙️</i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">Edit Todo</h1>
+
+        <div class="form-container">
+            <form id="editTodoForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Properties_id">Property</label>
+                        <select id="Properties_id" name="Properties_id" required>
+                            <option value="">Select a property</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority" required>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assigned_to">Assigned To</label>
+                        <input type="text" id="assigned_to" name="assigned_to">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estimated_cost">Estimated Cost ($)</label>
+                        <input type="number" id="estimated_cost" name="estimated_cost" min="0" step="0.01">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="window.location.href='view-todos.html'">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Todo</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let todoId = '';
+
+        // Load todo data
+        async function loadTodoData() {
+            try {
+                todoId = new URLSearchParams(window.location.search).get('id');
+                if (!todoId) {
+                    alert('No todo ID provided');
+                    window.location.href = '/view-todos.html';
+                    return;
+                }
+
+                const [todoResponse, propertiesResponse] = await Promise.all([
+                    fetch(`/api/todos/${todoId}`),
+                    fetch('/api/properties')
+                ]);
+
+                if (!todoResponse.ok) throw new Error('Failed to fetch todo');
+                if (!propertiesResponse.ok) throw new Error('Failed to fetch properties');
+
+                const todo = await todoResponse.json();
+                const properties = await propertiesResponse.json();
+
+                // Populate properties dropdown
+                const propertiesSelect = document.getElementById('Properties_id');
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = property.address;
+                    propertiesSelect.appendChild(option);
+                });
+
+                // Fill form with todo data
+                Object.entries(todo).forEach(([key, value]) => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (key === 'due_date') {
+                            element.value = new Date(value).toISOString().split('T')[0];
+                        } else {
+                            element.value = value;
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading todo:', error);
+                alert('Error loading todo data');
+            }
+        }
+
+        // Form submission handler
+        document.getElementById('editTodoForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = new FormData(this);
+                const todoData = {
+                    Properties_id: formData.get('Properties_id'),
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    due_date: formData.get('due_date'),
+                    priority: formData.get('priority'),
+                    status: formData.get('status'),
+                    assigned_to: formData.get('assigned_to'),
+                    estimated_cost: parseFloat(formData.get('estimated_cost')) || 0
+                };
+                
+                const response = await fetch(`/api/todos/${todoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(todoData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update todo');
+                }
+                
+                alert('Todo updated successfully');
+                window.location.href = '/view-todos.html';
+            } catch (error) {
+                console.error('Error updating todo:', error);
+                alert('Error updating todo. Please try again.');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadTodoData);
+
+        // Mobile menu toggle
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

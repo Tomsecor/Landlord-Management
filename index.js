@@ -729,6 +729,39 @@ app.get('/api/properties/:id/todo-stats', async (req, res) => {
   }
 });
 
+// New endpoint to get all todos with filters
+app.get('/api/todos', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const todosCollection = db.collection('todos');
+    const { ObjectId } = require('mongodb');
+    
+    // Build query based on filters
+    const query = {};
+    
+    if (req.query.property_id) {
+      query.Properties_id = new ObjectId(req.query.property_id);
+    }
+    
+    if (req.query.priority) {
+      query.priority = req.query.priority;
+    }
+    
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    
+    const todos = await todosCollection.find(query)
+      .sort({ due_date: 1 })
+      .toArray();
+    
+    res.json(todos);
+  } catch (error) {
+    console.error('Error fetching todos:', error);
+    res.status(500).json({ error: 'Failed to fetch todos' });
+  }
+});
+
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
