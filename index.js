@@ -1,40 +1,51 @@
 const dotenv = require('dotenv');
+const { MongoClient } = require("mongodb");
+const express = require('express');
 
 // Load environment variables from .env file
 dotenv.config();
-console.log(process.env.DATABASE_URL); // Outputs: mongodb://localhost:27017/myapp
 
+// Global database connection and client
+let dbClient = null;
+let db = null;
 
-const { MongoClient } = require("mongodb");
-
-async function connectToDatabase() {
+// Initialize database connection
+async function initializeDatabase() {
   const uri = process.env.MONGO_URI;
   if (!uri) {
     throw new Error("MONGO_URI environment variable is not set.");
   }
 
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
   try {
-    await client.connect();
+    dbClient = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+    await dbClient.connect();
+    db = dbClient.db("your_db_name"); // Replace with your actual database name
     console.log("Connected to database");
-    return client.db("your_db_name"); // Replace with your actual database name
+    return db;
   } catch (error) {
     console.error("Database connection failed:", error);
     throw error;
   }
 }
 
-const express = require('express');
+// Helper function to get DB instance
+function getDb() {
+  if (!db) {
+    throw new Error("Database not initialized");
+  }
+  return db;
+}
+
 const app = express();
 
-app.use(express.urlencoded({ extended: true })); // To parse form data
-app.use(express.json()); // Add JSON middleware to parse JSON request bodies
-app.use(express.static('public')); // Serve static files from 'public' folder
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static('public'));
 
 // POST route for adding tenants
 app.post('/tenants', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const propertiesCollection = db.collection('properties');
 
@@ -68,7 +79,7 @@ app.post('/tenants', async (req, res) => {
 // POST route for adding payments
 app.post('/payments', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const tenantsCollection = db.collection('tenants');
 
@@ -101,7 +112,7 @@ app.post('/payments', async (req, res) => {
 // API endpoint to get all tenants
 app.get('/api/tenants', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
     const propertiesCollection = db.collection('properties');
@@ -154,7 +165,7 @@ app.get('/api/tenants', async (req, res) => {
 // API endpoint to get all payments
 app.get('/api/payments', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const tenantsCollection = db.collection('tenants');
     const propertiesCollection = db.collection('properties');
@@ -193,7 +204,7 @@ app.get('/api/payments', async (req, res) => {
 // API endpoint to get tenants by property
 app.get('/api/properties/:id/tenants', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const { ObjectId } = require('mongodb');
 
@@ -211,7 +222,7 @@ app.get('/api/properties/:id/tenants', async (req, res) => {
 // API endpoint to get payments by property
 app.get('/api/properties/:id/payments', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
 
@@ -229,7 +240,7 @@ app.get('/api/properties/:id/payments', async (req, res) => {
 // API endpoint to get payments by tenant
 app.get('/api/tenants/:id/payments', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
 
@@ -247,7 +258,7 @@ app.get('/api/tenants/:id/payments', async (req, res) => {
 // API endpoint to get a single tenant
 app.get('/api/tenants/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const { ObjectId } = require('mongodb');
     const tenant = await tenantsCollection.findOne({ _id: new ObjectId(req.params.id) });
@@ -266,7 +277,7 @@ app.get('/api/tenants/:id', async (req, res) => {
 // API endpoint to update a tenant
 app.put('/api/tenants/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const { ObjectId } = require('mongodb');
     
@@ -303,7 +314,7 @@ app.put('/api/tenants/:id', async (req, res) => {
 // API endpoint to delete a tenant
 app.delete('/api/tenants/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const { ObjectId } = require('mongodb');
     const result = await tenantsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
@@ -322,7 +333,7 @@ app.delete('/api/tenants/:id', async (req, res) => {
 // API endpoint to get a single payment
 app.get('/api/payments/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
     const payment = await paymentsCollection.findOne({ _id: new ObjectId(req.params.id) });
@@ -341,7 +352,7 @@ app.get('/api/payments/:id', async (req, res) => {
 // API endpoint to update a payment
 app.put('/api/payments/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
     
@@ -377,7 +388,7 @@ app.put('/api/payments/:id', async (req, res) => {
 // API endpoint to delete a payment
 app.delete('/api/payments/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
     const result = await paymentsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
@@ -396,7 +407,7 @@ app.delete('/api/payments/:id', async (req, res) => {
 // API endpoint to get payments for a tenant
 app.get('/api/tenants/:id/payments', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const paymentsCollection = db.collection('payments');
     const { ObjectId } = require('mongodb');
     
@@ -415,7 +426,7 @@ app.get('/api/tenants/:id/payments', async (req, res) => {
 // Get all properties
 app.get('/api/properties', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const propertiesCollection = db.collection('properties');
     const properties = await propertiesCollection.find().toArray();
     res.json(properties);
@@ -428,7 +439,7 @@ app.get('/api/properties', async (req, res) => {
 // Get a single property
 app.get('/api/properties/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const propertiesCollection = db.collection('properties');
     const { ObjectId } = require('mongodb');
     const property = await propertiesCollection.findOne({ _id: new ObjectId(req.params.id) });
@@ -447,7 +458,7 @@ app.get('/api/properties/:id', async (req, res) => {
 // Add a new property
 app.post('/api/properties', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const propertiesCollection = db.collection('properties');
     const property = {
       address: req.body.address,
@@ -476,7 +487,7 @@ app.post('/api/properties', async (req, res) => {
 // Update a property
 app.put('/api/properties/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const propertiesCollection = db.collection('properties');
     const property = {
       address: req.body.address,
@@ -514,7 +525,7 @@ app.put('/api/properties/:id', async (req, res) => {
 // Delete a property
 app.delete('/api/properties/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const propertiesCollection = db.collection('properties');
     const { ObjectId } = require('mongodb');
     const result = await propertiesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
@@ -533,7 +544,7 @@ app.delete('/api/properties/:id', async (req, res) => {
 // API endpoint to get dashboard statistics
 app.get('/api/statistics', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const tenantsCollection = db.collection('tenants');
     const paymentsCollection = db.collection('payments');
     const propertiesCollection = db.collection('properties');
@@ -590,7 +601,7 @@ app.get('/api/statistics', async (req, res) => {
 // Get all todos for a property
 app.get('/api/properties/:id/todos', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     
@@ -618,7 +629,7 @@ app.get('/api/properties/:id/todos', async (req, res) => {
 // Add a new todo
 app.post('/api/todos', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     
@@ -645,7 +656,7 @@ app.post('/api/todos', async (req, res) => {
 // Update a todo
 app.put('/api/todos/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     
@@ -679,7 +690,7 @@ app.put('/api/todos/:id', async (req, res) => {
 // Delete a todo
 app.delete('/api/todos/:id', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     const result = await todosCollection.deleteOne({ _id: new ObjectId(req.params.id) });
@@ -698,7 +709,7 @@ app.delete('/api/todos/:id', async (req, res) => {
 // Get todo statistics for a property
 app.get('/api/properties/:id/todo-stats', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     
@@ -732,7 +743,7 @@ app.get('/api/properties/:id/todo-stats', async (req, res) => {
 // New endpoint to get all todos with filters
 app.get('/api/todos', async (req, res) => {
   try {
-    const db = await connectToDatabase();
+    const db = getDb();
     const todosCollection = db.collection('todos');
     const { ObjectId } = require('mongodb');
     
@@ -762,80 +773,186 @@ app.get('/api/todos', async (req, res) => {
   }
 });
 
-// Start the server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// API endpoints for bills
+// Get all bills
+app.get('/api/bills', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const propertiesCollection = db.collection('properties');
+    const { ObjectId } = require('mongodb');
+
+    // Get property filter if provided
+    const propertyId = req.query.property_id;
+    const query = propertyId ? { property_id: new ObjectId(propertyId) } : {};
+
+    // Get all bills (filtered by property if requested)
+    const bills = await billsCollection.find(query).toArray();
+
+    // Enhance bills with property info
+    const enhancedBills = await Promise.all(bills.map(async (bill) => {
+      let propertyInfo = null;
+      if (bill.property_id) {
+        propertyInfo = await propertiesCollection.findOne({ _id: bill.property_id });
+      }
+
+      return {
+        ...bill,
+        propertyInfo: propertyInfo ? {
+          address: propertyInfo.address,
+          city: propertyInfo.city
+        } : null
+      };
+    }));
+
+    res.json(enhancedBills);
+  } catch (error) {
+    console.error('Error fetching bills:', error);
+    res.status(500).json({ error: 'Failed to fetch bills' });
+  }
 });
 
-async function main() {
+// Get a single bill
+app.get('/api/bills/:id', async (req, res) => {
   try {
-    // Connect to the database
-    const db = await connectToDatabase();
-    console.log("Connected to database:", db.databaseName);
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    const bill = await billsCollection.findOne({ _id: new ObjectId(req.params.id) });
 
-    // Access the collections
-    const tenantsCollection = db.collection("tenants");
-    const paymentsCollection = db.collection("payments");
-
-    // Sample data insertion is commented out to rely on user input
-    /*
-    const tenantCount = await tenantsCollection.countDocuments();
-    if (tenantCount === 0) {
-      await tenantsCollection.insertMany([
-        { name: "John Doe", unit_number: "Apartment 5" },
-        { name: "Jane Smith", unit_number: "Apartment 10" },
-      ]);
-      console.log("Sample tenants added.");
+    if (bill) {
+      res.json(bill);
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
     }
-
-    const paymentCount = await paymentsCollection.countDocuments();
-    if (paymentCount === 0) {
-      const paymentDate = new Date("2023-10-01"); // Use the first day of the month
-      await paymentsCollection.insertMany([
-        { unit_number: "Apartment 5", payment_date: paymentDate, paid: true },
-        { unit_number: "Apartment 10", payment_date: paymentDate, paid: false },
-      ]);
-      console.log("Sample payments added for October 2023.");
-    }
-    */
-
-    // Check a tenant's payment status
-    async function checkTenantPayment(tenantName, paymentDate) {
-      const payment = await paymentsCollection.findOne({
-        tenant_name: tenantName,
-        payment_date: paymentDate,
-      });
-      console.log("Payment found for", tenantName, "on", paymentDate.toDateString(), ":", payment);
-      if (payment && payment.paid) {
-        console.log(`${tenantName} has paid for ${paymentDate.toDateString()}`);
-      } else {
-        console.log(`${tenantName} has not paid for ${paymentDate.toDateString()}`);
-      }
-    }
-
-    // List all tenants with payment status
-    async function listTenantsWithStatus(paymentDate) {
-      const payments = await paymentsCollection.find({ payment_date: paymentDate }).toArray();
-      console.log("Payments for", paymentDate.toDateString(), ":", payments);
-      const paidTenants = payments.filter((p) => p.paid).map((p) => p.tenant_name);
-      const tenants = await tenantsCollection.find().toArray();
-      console.log("Tenants:", tenants);
-      tenants.forEach((tenant) => {
-        const status = paidTenants.includes(tenant.name) ? "Paid" : "Not Paid";
-        console.log(`${tenant.name} (${tenant.unit_number}): ${status}`);
-      });
-    }
-
-    // Run the functions
-    const exampleDate = new Date("2023-10-01T00:00:00Z"); // UTC date
-    await checkTenantPayment("John Doe", exampleDate);
-    await listTenantsWithStatus(exampleDate);
-
-    console.log("All operations completed.");
   } catch (error) {
-    console.error("An error occurred:", error);
+    console.error('Error fetching bill:', error);
+    res.status(500).json({ error: 'Failed to fetch bill' });
   }
-}
+});
 
-main().catch(console.error);
+// Add a new bill
+app.post('/api/bills', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    
+    const bill = {
+      property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
+      bill_type: req.body.bill_type,
+      amount: parseFloat(req.body.amount) || 0,
+      due_date: req.body.due_date ? new Date(req.body.due_date) : null,
+      paid: req.body.paid === 'true' || req.body.paid === true,
+      payment_date: req.body.payment_date ? new Date(req.body.payment_date) : null,
+      bill_period_start: req.body.bill_period_start ? new Date(req.body.bill_period_start) : null,
+      bill_period_end: req.body.bill_period_end ? new Date(req.body.bill_period_end) : null,
+      notes: req.body.notes || '',
+      created_at: new Date()
+    };
+
+    const result = await billsCollection.insertOne(bill);
+    res.status(201).json({ message: 'Bill added successfully', id: result.insertedId });
+  } catch (error) {
+    console.error('Error adding bill:', error);
+    res.status(500).json({ error: 'Failed to add bill' });
+  }
+});
+
+// Update a bill
+app.put('/api/bills/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    
+    const bill = {
+      property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
+      bill_type: req.body.bill_type,
+      amount: parseFloat(req.body.amount) || 0,
+      due_date: req.body.due_date ? new Date(req.body.due_date) : null,
+      paid: req.body.paid === 'true' || req.body.paid === true,
+      payment_date: req.body.payment_date ? new Date(req.body.payment_date) : null,
+      bill_period_start: req.body.bill_period_start ? new Date(req.body.bill_period_start) : null,
+      bill_period_end: req.body.bill_period_end ? new Date(req.body.bill_period_end) : null,
+      notes: req.body.notes || '',
+      updated_at: new Date()
+    };
+
+    const result = await billsCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: bill }
+    );
+
+    if (result.matchedCount === 1) {
+      res.json({ message: 'Bill updated successfully' });
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
+    }
+  } catch (error) {
+    console.error('Error updating bill:', error);
+    res.status(500).json({ error: 'Failed to update bill' });
+  }
+});
+
+// Delete a bill
+app.delete('/api/bills/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    const result = await billsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Bill deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting bill:', error);
+    res.status(500).json({ error: 'Failed to delete bill' });
+  }
+});
+
+// Get bills by property
+app.get('/api/properties/:id/bills', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    
+    const bills = await billsCollection.find({ 
+      property_id: new ObjectId(req.params.id) 
+    }).toArray();
+    
+    res.json(bills);
+  } catch (error) {
+    console.error('Error fetching property bills:', error);
+    res.status(500).json({ error: 'Failed to fetch property bills' });
+  }
+});
+
+// Modified server startup
+const port = process.env.PORT || 8080;
+
+// Initialize database before starting server
+initializeDatabase()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize database:", error);
+    process.exit(1);
+  });
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down gracefully...');
+  if (dbClient) {
+    await dbClient.close();
+    console.log('Database connection closed');
+  }
+  process.exit(0);
+});
