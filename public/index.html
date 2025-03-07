@@ -295,58 +295,103 @@
         // Replace Chart.js implementation with ApexCharts
         async function loadRentMortgageData() {
             try {
-                const response = await fetch('/api/properties');
-                const properties = await response.json();
+                // Get both properties and payments data
+                const [propertiesResponse, paymentsResponse] = await Promise.all([
+                    fetch('/api/properties'),
+                    fetch('/api/payments')
+                ]);
                 
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const currentMonth = new Date().getMonth();
-                const last6Months = months.slice(currentMonth - 5, currentMonth + 1);
+                const properties = await propertiesResponse.json();
+                const payments = await paymentsResponse.json();
+
+                // Get last 6 months dates
+                const months = [];
+                const rentData = [];
+                const mortgageData = [];
+                const today = new Date();
                 
-                let rentData = [];
-                let mortgageData = [];
-                
-                properties.forEach(property => {
-                    const monthlyRent = property.rent || 0;
-                    const monthlyMortgage = property.monthly_mortgage || 0;
+                for (let i = 5; i >= 0; i--) {
+                    const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    months.push(date.toLocaleString('default', { month: 'short', year: '2-digit' }));
                     
-                    for (let i = 0; i < 6; i++) {
-                        if (!rentData[i]) rentData[i] = 0;
-                        if (!mortgageData[i]) mortgageData[i] = 0;
-                        
-                        rentData[i] += monthlyRent;
-                        mortgageData[i] += monthlyMortgage;
-                    }
-                });
+                    // Calculate total mortgage for this month
+                    const totalMortgage = properties.reduce((sum, property) => 
+                        sum + (property.monthly_mortgage || 0), 0);
+                    mortgageData.push(totalMortgage);
+                    
+                    // Calculate actual rent payments received for this month
+                    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+                    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+                    
+                    const monthlyRent = payments
+                        .filter(payment => {
+                            const paymentDate = new Date(payment.payment_date);
+                            return paymentDate >= monthStart && 
+                                   paymentDate <= monthEnd && 
+                                   payment.payment_type === 'Rent' &&
+                                   payment.paid;
+                        })
+                        .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+                    
+                    rentData.push(monthlyRent);
+                }
 
                 const options = {
                     series: [{
-                        name: 'Total Rent',
+                        name: 'Rent Collected',
                         data: rentData
                     }, {
-                        name: 'Total Mortgage',
+                        name: 'Mortgage Due',
                         data: mortgageData
                     }],
                     chart: {
                         type: 'line',
-                        height: 350
+                        height: 350,
+                        zoom: {
+                            enabled: false
+                        }
                     },
                     colors: ['#2ecc71', '#e74c3c'],
+                    stroke: {
+                        curve: 'straight',
+                        width: 3
+                    },
                     xaxis: {
-                        categories: last6Months
+                        categories: months,
+                        title: {
+                            text: 'Month'
+                        }
                     },
                     yaxis: {
+                        title: {
+                            text: 'Amount ($)'
+                        },
                         labels: {
                             formatter: function(value) {
-                                return '$' + value;
+                                return '$' + value.toLocaleString();
                             }
                         }
                     },
                     title: {
-                        text: 'Monthly Rent vs Mortgage Comparison',
+                        text: 'Monthly Rent Collections vs Mortgage Payments',
                         align: 'center'
+                    },
+                    grid: {
+                        row: {
+                            colors: ['#f3f3f3', 'transparent'],
+                            opacity: 0.5
+                        }
+                    },
+                    legend: {
+                        position: 'top'
+                    },
+                    markers: {
+                        size: 5
                     }
                 };
 
+                // Clear any existing chart
+                document.querySelector("#rentMortgageChart").innerHTML = '';
                 const chart = new ApexCharts(document.querySelector("#rentMortgageChart"), options);
                 chart.render();
             } catch (error) {

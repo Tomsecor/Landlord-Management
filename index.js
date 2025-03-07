@@ -1,6 +1,8 @@
 const dotenv = require('dotenv');
 const { MongoClient } = require("mongodb");
 const express = require('express');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -41,6 +43,70 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
+
+// Add session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+    if (req.session && req.session.userId) {
+        return next();
+    }
+    // If requesting API endpoint, return 401
+    if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    // For page requests, redirect to login
+    res.redirect('/login.html');
+}
+
+// Apply auth middleware to all routes except login
+app.use((req, res, next) => {
+    const publicPaths = ['/login.html', '/api/auth/login'];
+    if (publicPaths.includes(req.path)) {
+        return next();
+    }
+    requireAuth(req, res, next);
+});
+
+// Login route
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const db = getDb();
+        const { email, password } = req.body;
+        
+        const user = await db.collection('users').findOne({ email });
+        
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+        
+        req.session.userId = user._id;
+        res.json({ message: 'Login successful' });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Logout route
+app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ message: 'Logged out successfully' });
+});
+
+// Redirect root to login if not authenticated
+app.get('/', (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login.html');
+    }
+    res.sendFile('index.html', { root: './public' });
+});
 
 // POST route for adding tenants
 app.post('/tenants', async (req, res) => {

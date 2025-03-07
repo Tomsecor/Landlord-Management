@@ -497,9 +497,7 @@
                 document.getElementById('notes').value = property.notes || '';
                 
                 // Update the loadProperty function to include mortgage fields
-                document.getElementById('mortgage_amount').value = property.mortgage_amount || '';
-                document.getElementById('mortgage_rate').value = property.mortgage_rate || '';
-                document.getElementById('mortgage_term').value = property.mortgage_term || '';
+               
                 document.getElementById('monthly_mortgage').value = property.monthly_mortgage || '';
                 
                 // Load property stats
@@ -576,9 +574,6 @@
                     rent: parseFloat(document.getElementById('rent').value) || 0,
                     purchase_price: parseFloat(document.getElementById('purchase_price').value) || 0,
                     purchase_date: document.getElementById('purchase_date').value || null,
-                    mortgage_amount: parseFloat(document.getElementById('mortgage_amount').value) || 0,
-                    mortgage_rate: parseFloat(document.getElementById('mortgage_rate').value) || 0,
-                    mortgage_term: parseInt(document.getElementById('mortgage_term').value) || 0,
                     monthly_mortgage: parseFloat(document.getElementById('monthly_mortgage').value) || 0,
                     notes: document.getElementById('notes').value
                 };
