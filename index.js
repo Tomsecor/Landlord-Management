@@ -65,13 +65,24 @@ function requireAuth(req, res, next) {
     res.redirect('/login.html');
 }
 
-// Apply auth middleware to all routes except login
+// Public paths that don't require authentication
+const publicPaths = ['/login.html', '/api/auth/login'];
+
+// Apply auth middleware to all routes except public paths
 app.use((req, res, next) => {
-    const publicPaths = ['/login.html', '/api/auth/login'];
     if (publicPaths.includes(req.path)) {
         return next();
     }
     requireAuth(req, res, next);
+});
+
+// Redirect root to index.html or login.html based on auth status
+app.get('/', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.sendFile('index.html', { root: './public' });
+    } else {
+        res.redirect('/login.html');
+    }
 });
 
 // Login route
