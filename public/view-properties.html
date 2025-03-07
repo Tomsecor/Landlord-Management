@@ -257,6 +257,7 @@
                             <th>Address</th>
                             <th>Type</th>
                             <th>Rent ($)</th>
+                            <th>Mortgage ($)</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -264,7 +265,7 @@
                     <tbody id="propertiesTableBody">
                         <!-- Properties will be loaded here -->
                         <tr>
-                            <td colspan="5" style="text-align: center;">Loading properties...</td>
+                            <td colspan="6" style="text-align: center;">Loading properties...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -299,7 +300,7 @@
                 const tableBody = document.getElementById('propertiesTableBody');
 
                 if (properties.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No properties found. Add your first property!</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No properties found. Add your first property!</td></tr>';
                     return;
                 }
 
@@ -327,6 +328,7 @@
                             <td>${property.address}, ${property.city}, ${property.state} ${property.zip}</td>
                             <td>${property.type || 'N/A'}</td>
                             <td>$${property.rent || 0}</td>
+                            <td>$${property.monthly_mortgage || 0}</td>
                             <td>${status}</td>
                             <td class="actions">
                                 <button class="edit-btn" onclick="editProperty('${property._id}')">✏️</button>
@@ -342,7 +344,7 @@
             } catch (error) {
                 console.error('Error loading properties:', error);
                 document.getElementById('propertiesTableBody').innerHTML = 
-                    '<tr><td colspan="5" style="text-align: center;">Error loading properties. Please try again.</td></tr>';
+                    '<tr><td colspan="6" style="text-align: center;">Error loading properties. Please try again.</td></tr>';
             }
         }
 
