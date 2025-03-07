@@ -428,8 +428,17 @@ app.get('/api/properties', async (req, res) => {
   try {
     const db = getDb();
     const propertiesCollection = db.collection('properties');
-    const properties = await propertiesCollection.find().toArray();
-    res.json(properties);
+    
+    const properties = await propertiesCollection.find({}).toArray();
+    
+    // Calculate monthly totals including both rent and mortgage
+    const enhancedProperties = properties.map(property => ({
+      ...property,
+      monthly_mortgage: parseFloat(property.monthly_mortgage) || 0,
+      rent: parseFloat(property.rent) || 0
+    }));
+
+    res.json(enhancedProperties);
   } catch (error) {
     console.error('Error fetching properties:', error);
     res.status(500).json({ error: 'Failed to fetch properties' });
@@ -460,6 +469,7 @@ app.post('/api/properties', async (req, res) => {
   try {
     const db = getDb();
     const propertiesCollection = db.collection('properties');
+    
     const property = {
       address: req.body.address,
       city: req.body.city,
@@ -468,16 +478,17 @@ app.post('/api/properties', async (req, res) => {
       type: req.body.type,
       bedrooms: parseInt(req.body.bedrooms) || 0,
       bathrooms: parseFloat(req.body.bathrooms) || 0,
-      sqft: parseInt(req.body.sqft) || 0,
       rent: parseFloat(req.body.rent) || 0,
+      sqft: parseInt(req.body.sqft) || 0,
       purchase_price: parseFloat(req.body.purchase_price) || 0,
       purchase_date: req.body.purchase_date ? new Date(req.body.purchase_date) : null,
+      monthly_mortgage: parseFloat(req.body.monthly_mortgage) || 0,
       notes: req.body.notes || '',
       created_at: new Date()
     };
 
-    const result = await propertiesCollection.insertOne(property);
-    res.status(201).json({ message: 'Property added successfully', id: result.insertedId });
+    await propertiesCollection.insertOne(property);
+    res.status(201).json(property);
   } catch (error) {
     console.error('Error adding property:', error);
     res.status(500).json({ error: 'Failed to add property' });
@@ -489,6 +500,8 @@ app.put('/api/properties/:id', async (req, res) => {
   try {
     const db = getDb();
     const propertiesCollection = db.collection('properties');
+    const { ObjectId } = require('mongodb');
+    
     const property = {
       address: req.body.address,
       city: req.body.city,
@@ -497,14 +510,14 @@ app.put('/api/properties/:id', async (req, res) => {
       type: req.body.type,
       bedrooms: parseInt(req.body.bedrooms) || 0,
       bathrooms: parseFloat(req.body.bathrooms) || 0,
-      sqft: parseInt(req.body.sqft) || 0,
       rent: parseFloat(req.body.rent) || 0,
+      sqft: parseInt(req.body.sqft) || 0,
       purchase_price: parseFloat(req.body.purchase_price) || 0,
       purchase_date: req.body.purchase_date ? new Date(req.body.purchase_date) : null,
+      monthly_mortgage: parseFloat(req.body.monthly_mortgage) || 0,
       notes: req.body.notes || '',
       updated_at: new Date()
     };
-    const { ObjectId } = require('mongodb');
 
     const result = await propertiesCollection.updateOne(
       { _id: new ObjectId(req.params.id) },

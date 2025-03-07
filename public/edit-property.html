@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -373,6 +372,10 @@
                         <label for="purchase_date">Purchase Date</label>
                         <input type="date" id="purchase_date" name="purchase_date">
                     </div>
+                    <div class="form-group">
+                        <label for="monthly_mortgage">Monthly Mortgage Payment ($)</label>
+                        <input type="number" id="monthly_mortgage" name="monthly_mortgage" step="0.01" min="0">
+                    </div>
                     <div class="form-group full-width">
                         <label for="notes">Notes</label>
                         <textarea id="notes" name="notes"></textarea>
@@ -493,6 +496,12 @@
                 
                 document.getElementById('notes').value = property.notes || '';
                 
+                // Update the loadProperty function to include mortgage fields
+                document.getElementById('mortgage_amount').value = property.mortgage_amount || '';
+                document.getElementById('mortgage_rate').value = property.mortgage_rate || '';
+                document.getElementById('mortgage_term').value = property.mortgage_term || '';
+                document.getElementById('monthly_mortgage').value = property.monthly_mortgage || '';
+                
                 // Load property stats
                 document.getElementById('propertyValue').textContent = `$${property.purchase_price || 0}`;
                 
@@ -567,6 +576,10 @@
                     rent: parseFloat(document.getElementById('rent').value) || 0,
                     purchase_price: parseFloat(document.getElementById('purchase_price').value) || 0,
                     purchase_date: document.getElementById('purchase_date').value || null,
+                    mortgage_amount: parseFloat(document.getElementById('mortgage_amount').value) || 0,
+                    mortgage_rate: parseFloat(document.getElementById('mortgage_rate').value) || 0,
+                    mortgage_term: parseInt(document.getElementById('mortgage_term').value) || 0,
+                    monthly_mortgage: parseFloat(document.getElementById('monthly_mortgage').value) || 0,
                     notes: document.getElementById('notes').value
                 };
                 

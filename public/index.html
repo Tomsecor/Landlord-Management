@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,6 +155,8 @@
             }
         }
     </style>
+    <!-- Replace Chart.js with ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
 <body>
     <button class="hamburger-menu" id="menuToggle">☰</button>
@@ -243,6 +244,15 @@
                 </div>
             </div>
         </div>
+        <h1 class="page-title">Dashboard</h1>
+        
+        <div class="stats-container">
+            <!-- Replace canvas with div for ApexCharts -->
+            <div class="stat-card" style="grid-column: span 2;">
+                <h3>Rent vs Mortgage Overview</h3>
+                <div id="rentMortgageChart"></div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -281,6 +291,74 @@
         
         // Fetch statistics when the page loads
         document.addEventListener('DOMContentLoaded', fetchStatistics);
+
+        // Replace Chart.js implementation with ApexCharts
+        async function loadRentMortgageData() {
+            try {
+                const response = await fetch('/api/properties');
+                const properties = await response.json();
+                
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const currentMonth = new Date().getMonth();
+                const last6Months = months.slice(currentMonth - 5, currentMonth + 1);
+                
+                let rentData = [];
+                let mortgageData = [];
+                
+                properties.forEach(property => {
+                    const monthlyRent = property.rent || 0;
+                    const monthlyMortgage = property.monthly_mortgage || 0;
+                    
+                    for (let i = 0; i < 6; i++) {
+                        if (!rentData[i]) rentData[i] = 0;
+                        if (!mortgageData[i]) mortgageData[i] = 0;
+                        
+                        rentData[i] += monthlyRent;
+                        mortgageData[i] += monthlyMortgage;
+                    }
+                });
+
+                const options = {
+                    series: [{
+                        name: 'Total Rent',
+                        data: rentData
+                    }, {
+                        name: 'Total Mortgage',
+                        data: mortgageData
+                    }],
+                    chart: {
+                        type: 'line',
+                        height: 350
+                    },
+                    colors: ['#2ecc71', '#e74c3c'],
+                    xaxis: {
+                        categories: last6Months
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'Monthly Rent vs Mortgage Comparison',
+                        align: 'center'
+                    }
+                };
+
+                const chart = new ApexCharts(document.querySelector("#rentMortgageChart"), options);
+                chart.render();
+            } catch (error) {
+                console.error('Error loading rent vs mortgage data:', error);
+            }
+        }
+
+        // Add the chart loading to the initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // ...existing initialization code...
+            loadRentMortgageData();
+        });
     </script>
 </body>
 </html>
