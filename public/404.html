@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Landlord Manager</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .error-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin: 0 0 20px 0;
+        }
+
+        p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .back-btn {
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .back-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .links {
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🏠</div>
+        <h1>404</h1>
+        <p>Oops! The page you're looking for seems to be missing.</p>
+        <a href="/" class="back-btn">Back to Dashboard</a>
+        <div class="links">
+            <a href="/view-properties.html">Properties</a>
+            <a href="/view-tenants.html">Tenants</a>
+            <a href="/view-payments.html">Payments</a>
+        </div>
+    </div>
+</body>
+</html>

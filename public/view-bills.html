@@ -236,8 +236,6 @@
             }
         }
    
-        .status-paid { background-color: #2ecc71; color: white; }
-        .status-unpaid { background-color: #e74c3c; color: white; }
     </style>
 </head>
 <body>
@@ -261,6 +259,9 @@
             <a href="/view-payments.html" class="menu-item">
                 <i>💵</i> Payments
             </a>
+            <a href="/view-mileage.html" class="menu-item">
+                <i>🚗</i> Mileage
+            </a>
             <a href="/view-bills.html" class="menu-item active">
                 <i>📃</i> Bills
             </a>
@@ -275,22 +276,41 @@
     
 
     <div class="main-content">
-        <h1 class="page-title">Bills</h1>
+        <h1 class="page-title">Bill List</h1>
 
         <div class="data-container">
             <div class="toolbar">
-                <div class="filters">
-                    <select id="propertyFilter">
-                        <option value="">All Properties</option>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search bills...">
+                    <select id="monthFilter">
+                        <option value="">All Months</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
                     </select>
-                    <select id="statusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                    </select>
+                    <button id="searchBtn">Search</button>
                 </div>
                 <div class="action-buttons">
-                    <button onclick="window.location.href='add-bill.html'" class="btn btn-primary">+ Add Bill</button>
+                    <a href="/add-bill.html" class="action-btn">+ Add Bill</a>
+                    <button class="action-btn secondary" id="exportBtn">Export</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Bill Status</div>
+                <div class="filter-options">
+                    <label><input type="radio" name="billStatus" value="all" checked> All</label>
+                    <label><input type="radio" name="billStatus" value="paid"> Paid</label>
+                    <label><input type="radio" name="billStatus" value="unpaid"> Unpaid</label>
                 </div>
             </div>
 
@@ -313,6 +333,13 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="pagination">
+                <div class="page-info">Showing <span id="startRange">0</span>-<span id="endRange">0</span> of <span id="totalCount">0</span> bills</div>
+                <div class="page-buttons" id="pagination">
+                    <!-- Pagination buttons will be generated here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -324,14 +351,6 @@
                 const propertiesResponse = await fetch('/api/properties');
                 properties = await propertiesResponse.json();
                 
-                const propertyFilter = document.getElementById('propertyFilter');
-                properties.forEach(property => {
-                    const option = document.createElement('option');
-                    option.value = property._id;
-                    option.textContent = property.address;
-                    propertyFilter.appendChild(option);
-                });
-
                 await loadBills();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -340,23 +359,23 @@
 
         async function loadBills() {
             try {
-                const propertyFilter = document.getElementById('propertyFilter').value;
-                const statusFilter = document.getElementById('statusFilter').value;
-
                 let url = '/api/bills';
-                const params = new URLSearchParams();
-                if (propertyFilter) params.append('property_id', propertyFilter);
-                if (statusFilter) params.append('status', statusFilter);
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
-                }
 
                 const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch bills');
+                }
                 const bills = await response.json();
                 displayBills(bills);
+
+                // Update pagination counts
+                document.getElementById('startRange').textContent = bills.length > 0 ? '1' : '0';
+                document.getElementById('endRange').textContent = bills.length;
+                document.getElementById('totalCount').textContent = bills.length;
             } catch (error) {
                 console.error('Error loading bills:', error);
+                document.getElementById('billsTableBody').innerHTML = 
+                    '<tr><td colspan="8" style="text-align: center;">Error loading bills. Please try again.</td></tr>';
             }
         }
 
@@ -409,14 +428,90 @@
         }
 
         // Event listeners
-        document.getElementById('propertyFilter').addEventListener('change', loadBills);
-        document.getElementById('statusFilter').addEventListener('change', loadBills);
         document.addEventListener('DOMContentLoaded', loadData);
 
         // Mobile menu toggle
         document.getElementById('menuToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
         });
+
+        // Add new search functionality
+        document.getElementById('searchBtn').addEventListener('click', filterBills);
+        document.querySelectorAll('input[name="billStatus"]').forEach(radio => {
+            radio.addEventListener('change', filterBills);
+        });
+
+        function filterBills() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            const monthFilter = document.getElementById('monthFilter').value;
+            const statusFilter = document.querySelector('input[name="billStatus"]:checked').value;
+
+            const rows = document.querySelectorAll('#billsTableBody tr');
+
+            rows.forEach(row => {
+                if (row.cells.length < 4) return; // Skip placeholder rows
+
+                const billText = row.cells[0].textContent.toLowerCase() + ' ' + 
+                               row.cells[1].textContent.toLowerCase();
+                const billDate = new Date(row.cells[3].textContent);
+                const month = billDate.getMonth() + 1;
+                const status = row.cells[4].textContent.toLowerCase();
+
+                let showRow = true;
+
+                // Apply text filter
+                if (searchTerm && !billText.includes(searchTerm)) {
+                    showRow = false;
+                }
+
+                // Apply month filter
+                if (monthFilter && month !== parseInt(monthFilter)) {
+                    showRow = false;
+                }
+
+                // Apply status filter
+                if (statusFilter !== 'all' && !status.includes(statusFilter)) {
+                    showRow = false;
+                }
+
+                row.style.display = showRow ? '' : 'none';
+            });
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const visibleRows = document.querySelectorAll('#billsTableBody tr:not([style*="display: none"])');
+            document.getElementById('startRange').textContent = visibleRows.length > 0 ? '1' : '0';
+            document.getElementById('endRange').textContent = visibleRows.length;
+            document.getElementById('totalCount').textContent = visibleRows.length;
+        }
+
+        // Export functionality
+        document.getElementById('exportBtn').addEventListener('click', exportBills);
+
+        function exportBills() {
+            const rows = Array.from(document.querySelectorAll('#billsTableBody tr:not([style*="display: none"])'));
+            const csvContent = [
+                ['Property', 'Bill Type', 'Amount', 'Due Date', 'Status', 'Payment Date', 'Period'].join(','),
+                ...rows.map(row => {
+                    return Array.from(row.cells)
+                        .slice(0, -1) // Exclude actions column
+                        .map(cell => `"${cell.textContent.trim()}"`)
+                        .join(',');
+                })
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bills_export.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
     </script>
 </body>
 </html>

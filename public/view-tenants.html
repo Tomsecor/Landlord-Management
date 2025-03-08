@@ -183,7 +183,20 @@
             padding: 10px;
             cursor: pointer;
         }
-
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .status-paid {
+            background-color: #2ecc71;
+            color: rgb(255, 0, 0);
+        }
+        .status-unpaid {
+            background-color: #e74c3c;
+            color: white;
+        }
         /* Mobile responsive */
         @media (max-width: 768px) {
             body {
@@ -235,7 +248,7 @@
             <h2>Landlord Manager</h2>
         </div>
         <nav class="nav-menu">
-            <a href="/" class="menu-item">
+            <a href="/" class="menu-item active">
                 <i>📊</i> Dashboard
             </a>
             <a href="/view-properties.html" class="menu-item">
@@ -246,6 +259,9 @@
             </a>
             <a href="/view-payments.html" class="menu-item">
                 <i>💵</i> Payments
+            </a>
+            <a href="/view-mileage.html" class="menu-item">
+                <i>🚗</i> Mileage
             </a>
             <a href="/view-bills.html" class="menu-item">
                 <i>📃</i> Bills
@@ -368,10 +384,13 @@
                     } else {
                         tenants.forEach(tenant => {
                             const row = document.createElement('tr');
+                            const status = tenant.paid ?
+                            `<span class="status status-paid">Paid</span>` : 
+                        `<span class="status status-unpaid">Unpaid</span>`;
                             row.innerHTML = `
                                 <td>${tenant.name}</td>
                                 <td>${tenant.unit_number}</td>
-                                <td>${tenant.paymentStatus || 'Not Paid'}</td>
+                                 <td>${status}</td>
                                 <td class="actions">
                                     <button class="edit-btn" onclick="editTenant('${tenant._id}')">✏️</button>
                                     <button class="delete-btn" onclick="deleteTenant('${tenant._id}')">🗑️</button>
