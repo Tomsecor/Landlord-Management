@@ -52,6 +52,8 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
+        dbName: 'your_db_name',  // Add this line to specify database name
+        collectionName: 'sessions', // Optional: specify collection name for sessions
         ttl: 24 * 60 * 60 // Session TTL in seconds (1 day)
     }),
     cookie: { 
