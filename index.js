@@ -2,7 +2,9 @@ const dotenv = require('dotenv');
 const { MongoClient } = require("mongodb");
 const express = require('express');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -42,14 +44,20 @@ const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static('public'));
 
-// Add session middleware
+// Session middleware must be before other middleware
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        ttl: 24 * 60 * 60 // Session TTL in seconds (1 day)
+    }),
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 // 1 day in milliseconds
+    }
 }));
 
 // Authentication middleware
@@ -57,32 +65,34 @@ function requireAuth(req, res, next) {
     if (req.session && req.session.userId) {
         return next();
     }
-    // If requesting API endpoint, return 401
     if (req.path.startsWith('/api/')) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
-    // For page requests, redirect to login
     res.redirect('/login.html');
 }
 
-// Public paths that don't require authentication
+// Define public paths that don't require authentication
 const publicPaths = ['/login.html', '/api/auth/login'];
 
-// Apply auth middleware to all routes except public paths
+// Middleware to handle authentication
 app.use((req, res, next) => {
+    // Allow access to public paths without authentication
     if (publicPaths.includes(req.path)) {
         return next();
     }
+    // Require authentication for all other paths
     requireAuth(req, res, next);
 });
 
-// Redirect root to index.html or login.html based on auth status
-app.get('/', (req, res) => {
-    if (req.session && req.session.userId) {
-        res.sendFile('index.html', { root: './public' });
-    } else {
-        res.redirect('/login.html');
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Root route handler - must be after static middleware
+app.get('', (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login.html');
     }
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Login route
@@ -111,12 +121,13 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
-// Redirect root to login if not authenticated
-app.get('/', (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login.html');
+// Add this route to check auth status
+app.get('/api/auth/status', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.json({ authenticated: true });
+    } else {
+        res.json({ authenticated: false });
     }
-    res.sendFile('index.html', { root: './public' });
 });
 
 // POST route for adding tenants
@@ -1020,6 +1031,150 @@ app.get('/api/properties/:id/bills', async (req, res) => {
     console.error('Error fetching property bills:', error);
     res.status(500).json({ error: 'Failed to fetch property bills' });
   }
+});
+
+// Mileage routes
+app.get('/api/mileage', async (req, res) => {
+    try {
+        const db = getDb();
+        const mileage = await db.collection('mileage')
+            .find()
+            .sort({ date: -1 })
+            .toArray();
+        res.json(mileage);
+    } catch (error) {
+        console.error('Error fetching mileage:', error);
+        res.status(500).json({ error: 'Failed to fetch mileage entries' });
+    }
+});
+
+app.get('/api/mileage/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const { ObjectId } = require('mongodb');
+        const mileage = await db.collection('mileage').findOne({
+            _id: new ObjectId(req.params.id)
+        });
+        if (!mileage) {
+            return res.status(404).json({ error: 'Mileage entry not found' });
+        }
+        res.json(mileage);
+    } catch (error) {
+        console.error('Error fetching mileage:', error);
+        res.status(500).json({ error: 'Failed to fetch mileage entry' });
+    }
+});
+
+app.post('/api/mileage', async (req, res) => {
+    try {
+        const db = getDb();
+        const { ObjectId } = require('mongodb');
+        
+        const mileageEntry = {
+            date: new Date(req.body.date),
+            total_miles: parseFloat(req.body.total_miles),
+            purpose: req.body.purpose,
+            notes: req.body.notes,
+            tax_deductible: req.body.tax_deductible,
+            created_at: new Date()
+        };
+           
+        // If property_id is provided, get property details and add property name
+        if (req.body.property_id) {
+            mileageEntry.property_id = req.body.property_id;
+            const property = await db.collection('properties').findOne({
+                _id: new ObjectId(req.body.property_id)
+            });
+            if (property) {
+                mileageEntry.property_name = property.address;
+            }
+        }
+
+        const result = await db.collection('mileage').insertOne(mileageEntry);
+        res.status(201).json({ ...mileageEntry, _id: result.insertedId });
+    } catch (error) {
+        console.error('Error creating mileage entry:', error);
+        res.status(500).json({ error: 'Failed to create mileage entry' });
+    }
+});
+
+app.put('/api/mileage/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const { ObjectId } = require('mongodb');
+        
+        const mileageEntry = {
+            date: new Date(req.body.date),
+            total_miles: parseFloat(req.body.total_miles),
+            purpose: req.body.purpose,
+            notes: req.body.notes,
+            tax_deductible: req.body.tax_deductible,
+            updated_at: new Date()
+        };
+
+        // If property_id is provided, update property details
+        if (req.body.property_id) {
+            mileageEntry.property_id = req.body.property_id;
+            const property = await db.collection('properties').findOne({
+                _id: new ObjectId(req.body.property_id)
+            });
+            if (property) {
+                mileageEntry.property_name = property.address;
+            }
+        }
+
+        const result = await db.collection('mileage').updateOne(
+            { _id: new ObjectId(req.params.id) },
+            { $set: mileageEntry }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Mileage entry not found' });
+        }
+        res.json({ message: 'Mileage entry updated successfully' });
+    } catch (error) {
+        console.error('Error updating mileage:', error);
+        res.status(500).json({ error: 'Failed to update mileage entry' });
+    }
+});
+
+app.delete('/api/mileage/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const { ObjectId } = require('mongodb');
+        
+        const result = await db.collection('mileage').deleteOne({
+            _id: new ObjectId(req.params.id)
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Mileage entry not found' });
+        }
+        res.json({ message: 'Mileage entry deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting mileage:', error);
+        res.status(500).json({ error: 'Failed to delete mileage entry' });
+    }
+});
+
+// Ensure all routes are handled properly
+app.get('/', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.redirect('/login.html');
+    }
+});
+
+// Add this after all your routes
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 // Modified server startup

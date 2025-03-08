@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Mileage - Landlord App</title>
+    <style>
+         body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .form-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 500px;
+            text-align: left;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="date"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        input[type="checkbox"] {
+            margin-bottom: 15px;
+            transform: scale(1.5);
+            margin-right: 10px;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+        input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+        footer {
+            margin-top: 50px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Edit Mileage Entry</h1>
+            <p>Update your mileage record</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="icon">🚗</div>
+
+        <div class="form-container">
+            <form id="editMileageForm">
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+                <label for="total_miles">Total Miles:</label>
+                <input type="number" id="total_miles" name="total_miles" step="0.1" required>
+                <label for="purpose">Purpose:</label>
+                <select id="purpose" name="purpose" required>
+                    <option value="property_visit">Property Visit</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="supplies">Supplies Purchase</option>
+                    <option value="tenant_meeting">Tenant Meeting</option>
+                    <option value="other">Other</option>
+                </select>
+
+                <label for="property_id">Property (Optional):</label>
+                <select id="property_id" name="property_id">
+                    <option value="">Select a property</option>
+                </select>
+
+                <label for="notes">Notes:</label>
+                <textarea id="notes" name="notes" rows="3"></textarea>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="tax_deductible" name="tax_deductible">
+                    <label for="tax_deductible">Tax Deductible</label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" onclick="window.location.href='/view-mileage.html'" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Update Mileage Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const mileageId = new URLSearchParams(window.location.search).get('id');
+        
+        // Load mileage entry data
+        async function loadMileageEntry() {
+            try {
+                const response = await fetch(`/api/mileage/${mileageId}`);
+                const mileage = await response.json();
+                
+                document.getElementById('date').value = new Date(mileage.date).toISOString().split('T')[0];
+                document.getElementById('purpose').value = mileage.purpose;
+                document.getElementById('notes').value = mileage.notes || '';
+                document.getElementById('tax_deductible').checked = mileage.tax_deductible;
+                
+                if (mileage.property_id) {
+                    document.getElementById('property_id').value = mileage.property_id;
+                }
+            } catch (error) {
+                console.error('Error loading mileage entry:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('editMileageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const formData = {
+                    date: document.getElementById('date').value,
+                    purpose: document.getElementById('purpose').value,
+                    property_id: document.getElementById('property_id').value || null,
+                    notes: document.getElementById('notes').value,
+                    tax_deductible: document.getElementById('tax_deductible').checked
+                };
+
+                const response = await fetch(`/api/mileage/${mileageId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    window.location.href = '/view-mileage.html';
+                } else {
+                    throw new Error('Failed to update mileage entry');
+                }
+            } catch (error) {
+                console.error('Error updating mileage entry:', error);
+                alert('Error updating mileage entry');
+            }
+        });
+
+        // Load properties for dropdown
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/properties');
+                const properties = await response.json();
+                const select = document.getElementById('property_id');
+                
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = property.address;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProperties();
+            loadMileageEntry();
+        });
+    </script>
+</body>
+</html>
