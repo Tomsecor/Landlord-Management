@@ -45,45 +45,49 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session middleware must be before other middleware
+// Configure session middleware
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    secret: process.env.SESSION_SECRET || 'test',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
-        dbName: 'your_db_name',  // Add this line to specify database name
-        collectionName: 'sessions', // Optional: specify collection name for sessions
-        ttl: 24 * 60 * 60 // Session TTL in seconds (1 day)
+        dbName: 'your_db_name', // Match your MongoDB database name
+        collectionName: 'sessions',
+        ttl: 24 * 60 * 60, // Session TTL (1 day)
+        autoRemove: 'native'  // Enable automatic removal of expired sessions
     }),
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 // 1 day in milliseconds
-    }
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // Only send cookies over HTTPS in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // Cookie expiry (1 day)
+        sameSite: 'lax'
+    },
+    name: 'sessionId' // Custom cookie name
 }));
 
-// Authentication middleware
-function requireAuth(req, res, next) {
+// Add authentication middleware
+const authMiddleware = (req, res, next) => {
     if (req.session && req.session.userId) {
-        return next();
+        next();
+    } else {
+        // Don't redirect API calls, just return 401
+        if (req.path.startsWith('/api/')) {
+            res.status(401).json({ error: 'Unauthorized' });
+        } else {
+            res.redirect('/login.html');
+        }
     }
-    if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    res.redirect('/login.html');
-}
+};
 
-// Define public paths that don't require authentication
-const publicPaths = ['/login.html', '/api/auth/login'];
-
-// Middleware to handle authentication
+// Apply auth middleware to all routes except login
 app.use((req, res, next) => {
-    // Allow access to public paths without authentication
-    if (publicPaths.includes(req.path)) {
+    if (req.path === '/login.html' || 
+        req.path === '/api/auth/login' || 
+        req.path === '/api/auth/register') {
         return next();
     }
-    // Require authentication for all other paths
-    requireAuth(req, res, next);
+    authMiddleware(req, res, next);
 });
 
 // Serve static files from the public directory
@@ -100,16 +104,25 @@ app.get('', (req, res) => {
 // Login route
 app.post('/api/auth/login', async (req, res) => {
     try {
-        const db = getDb();
         const { email, password } = req.body;
+        const db = getDb();
         
         const user = await db.collection('users').findOne({ email });
         
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
         
+        const isValid = await bcrypt.compare(password, user.password);
+        
+        if (!isValid) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        
+        // Set session data
         req.session.userId = user._id;
+        req.session.email = user.email;
+        
         res.json({ message: 'Login successful' });
     } catch (error) {
         console.error('Login error:', error);
@@ -119,8 +132,13 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Logout route
 app.post('/api/auth/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ message: 'Logged out successfully' });
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error logging out' });
+        }
+        res.clearCookie('sessionId');
+        res.json({ message: 'Logged out successfully' });
+    });
 });
 
 // Add this route to check auth status
