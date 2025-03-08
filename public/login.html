@@ -96,29 +96,34 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.style.display = 'none';
+            
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin', // Important for session cookies
                     body: JSON.stringify({
                         email: document.getElementById('email').value,
                         password: document.getElementById('password').value
                     })
                 });
 
+                const data = await response.json();
+                
                 if (response.ok) {
                     window.location.href = '/';
                 } else {
-                    const error = await response.json();
-                    document.getElementById('errorMessage').textContent = error.message;
-                    document.getElementById('errorMessage').style.display = 'block';
+                    errorMessage.textContent = data.message || 'Login failed';
+                    errorMessage.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                document.getElementById('errorMessage').textContent = 'An error occurred during login';
-                document.getElementById('errorMessage').style.display = 'block';
+                errorMessage.textContent = 'An error occurred during login';
+                errorMessage.style.display = 'block';
             }
         });
     </script>
