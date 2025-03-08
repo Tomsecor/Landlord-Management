@@ -45,50 +45,55 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Configure session middleware
+// Update session middleware configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'test',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
-        dbName: 'your_db_name', // Match your MongoDB database name
+        dbName: 'LandlordTest',
         collectionName: 'sessions',
-        ttl: 24 * 60 * 60, // Session TTL (1 day)
-        autoRemove: 'native'  // Enable automatic removal of expired sessions
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
     }),
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // Only send cookies over HTTPS in production
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // Cookie expiry (1 day)
-        sameSite: 'lax'
+        secure: 'auto', // This will automatically set based on environment
+        sameSite: 'lax',  // Important for cross-site handling
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
     },
-    name: 'sessionId' // Custom cookie name
+    name: 'sid' // Custom session cookie name
 }));
 
-// Add authentication middleware
-const authMiddleware = (req, res, next) => {
-    if (req.session && req.session.userId) {
-        next();
-    } else {
-        // Don't redirect API calls, just return 401
-        if (req.path.startsWith('/api/')) {
-            res.status(401).json({ error: 'Unauthorized' });
-        } else {
-            res.redirect('/login.html');
-        }
-    }
-};
-
-// Apply auth middleware to all routes except login
+// Add debug logging for session
 app.use((req, res, next) => {
+    console.log('Session:', req.session);
+    console.log('User:', req.session.userId);
+    next();
+});
+
+// Auth middleware
+const authMiddleware = (req, res, next) => {
+    console.log('Checking auth:', req.path, req.session);
+    
     if (req.path === '/login.html' || 
         req.path === '/api/auth/login' || 
         req.path === '/api/auth/register') {
         return next();
     }
-    authMiddleware(req, res, next);
-});
+
+    if (!req.session || !req.session.userId) {
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        return res.redirect('/login.html');
+    }
+
+    next();
+};
+
+// Apply auth middleware to all routes
+app.use(authMiddleware);
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -101,32 +106,40 @@ app.get('', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Login route
+// Update login route
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const db = getDb();
         
         const user = await db.collection('users').findOne({ email });
-        
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
         
         const isValid = await bcrypt.compare(password, user.password);
-        
         if (!isValid) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
         
         // Set session data
-        req.session.userId = user._id;
+        req.session.userId = user._id.toString();
         req.session.email = user.email;
+
+        // Save session explicitly
+        await new Promise((resolve, reject) => {
+            req.session.save(err => {
+                if (err) reject(err);
+                resolve();
+            });
+        });
+
+        console.log('Login successful, session:', req.session);
+        res.json({ success: true, message: 'Login successful' });
         
-        res.json({ message: 'Login successful' });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
