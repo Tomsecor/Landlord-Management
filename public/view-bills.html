@@ -236,6 +236,55 @@
             }
         }
    
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .status-paid {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .status-unpaid {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .actions button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+        .edit-btn {
+            color: #3498db;
+        }
+        .delete-btn {
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
@@ -315,7 +364,7 @@
             </div>
 
             <div class="table-container">
-                <table>
+                <table id="billsTable">
                     <thead>
                         <tr>
                             <th>Property</th>
@@ -329,7 +378,9 @@
                         </tr>
                     </thead>
                     <tbody id="billsTableBody">
-                        <!-- Bills will be loaded here -->
+                        <tr>
+                            <td colspan="8" style="text-align: center;">Loading bills...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -381,19 +432,25 @@
 
         function displayBills(bills) {
             const tbody = document.getElementById('billsTableBody');
+            
+            if (bills.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No bills found. Add your first bill!</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = bills.map(bill => {
                 const property = properties.find(p => p._id === bill.property_id);
+                const status = bill.paid ? 
+                    `<span class="status status-paid">Paid</span>` : 
+                    `<span class="status status-unpaid">Unpaid</span>`;
+
                 return `
                     <tr>
                         <td>${property ? property.address : 'No Property'}</td>
                         <td>${bill.bill_type}</td>
                         <td>$${bill.amount.toFixed(2)}</td>
                         <td>${new Date(bill.due_date).toLocaleDateString()}</td>
-                        <td>
-                            <span class="status-badge status-${bill.paid ? 'paid' : 'unpaid'}">
-                                ${bill.paid ? 'Paid' : 'Unpaid'}
-                            </span>
-                        </td>
+                        <td>${status}</td>
                         <td>${bill.payment_date ? new Date(bill.payment_date).toLocaleDateString() : '-'}</td>
                         <td>${formatPeriod(bill.bill_period_start, bill.bill_period_end)}</td>
                         <td class="actions">
