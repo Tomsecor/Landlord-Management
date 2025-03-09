@@ -1,5 +1,5 @@
 const dotenv = require('dotenv');
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
@@ -45,9 +45,9 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Update session middleware configuration
+// Update session middleware (remove debug logging)
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'test',
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
@@ -58,19 +58,12 @@ app.use(session({
         autoRemove: 'native'
     }),
     cookie: {
-        secure: 'auto', // This will automatically set based on environment
-        sameSite: 'lax',  // Important for cross-site handling
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    name: 'sid' // Custom session cookie name
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+    }
 }));
-
-// Add debug logging for session
-app.use((req, res, next) => {
-    console.log('Session:', req.session);
-    console.log('User:', req.session.userId);
-    next();
-});
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
@@ -232,55 +225,92 @@ app.post('/payments', async (req, res) => {
 
 // API endpoint to get all tenants
 app.get('/api/tenants', async (req, res) => {
-  try {
-    const db = getDb();
-    const tenantsCollection = db.collection('tenants');
-    const paymentsCollection = db.collection('payments');
-    const propertiesCollection = db.collection('properties');
-    const { ObjectId } = require('mongodb');
-
-    // Get property filter if provided
-    const propertyId = req.query.property_id;
-    const query = propertyId ? { property_id: new ObjectId(propertyId) } : {};
-
-    // Get all tenants (filtered by property if requested)
-    const tenants = await tenantsCollection.find(query).toArray();
-
-    // Get current month payment status for each tenant
-    const currentDate = new Date();
-    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-    const enhancedTenants = await Promise.all(tenants.map(async (tenant) => {
-      const payment = await paymentsCollection.findOne({
-        tenant_name: tenant.name,
-        payment_date: {
-          $gte: startOfMonth,
-          $lte: endOfMonth
+    try {
+        const db = getDb();
+        const query = {};
+        
+        // Handle property filter
+        if (req.query.property_id) {
+            query.property_id = req.query.property_id;
         }
-      });
+        
+        const tenants = await db.collection('tenants')
+            .find(query)
+            .sort({ name: 1 })
+            .toArray();
+            
+        res.json(tenants);
+    } catch (error) {
+        console.error('Error fetching tenants:', error);
+        res.status(500).json({ error: 'Failed to fetch tenants' });
+    }
+});
 
-      // Get property information
-      let propertyInfo = null;
-      if (tenant.property_id) {
-        propertyInfo = await propertiesCollection.findOne({ _id: tenant.property_id });
-      }
+app.put('/api/tenants/:id/payment-status', async (req, res) => {
+    try {
+        const db = getDb();
+        const { id } = req.params;
+        const { hasPaid, paymentMonth, paymentYear } = req.body;
+        const { ObjectId } = require('mongodb');
+        // Find tenant and their property info
+        
+        const tenant = await db.collection('tenants').findOne({ 
+            _id: new ObjectId(id) 
+        });
 
-      return {
-        ...tenant,
-        paymentStatus: payment && payment.paid ? 'Paid' : 'Not Paid',
-        propertyInfo: propertyInfo ? {
-          address: propertyInfo.address,
-          city: propertyInfo.city
-        } : null
-      };
-    }));
+        if (!tenant) {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
 
-    res.json(enhancedTenants);
-  } catch (error) {
-    console.error('Error fetching tenants:', error);
-    res.status(500).json({ error: 'Failed to fetch tenants' });
-  }
+        // Update tenant payment status
+        const updateResult = await db.collection('tenants').updateOne(
+            { _id: new ObjectId(id) },
+            { 
+                $set: {
+                    lastPaymentStatus: hasPaid,
+                    lastPaymentMonth: paymentMonth,
+                    lastPaymentYear: paymentYear,
+                    lastPaymentDate: new Date()
+                },
+                $push: {
+                    paymentHistory: {
+                        date: new Date(),
+                        status: hasPaid ? 'paid' : 'unpaid',
+                        month: paymentMonth,
+                        year: paymentYear
+                    }
+                }
+            }
+        );
+
+        // If marked as paid, create payment record
+        if (hasPaid) {
+            const payment = {
+                tenant_id: id,
+                tenant_name: tenant.name,
+                property_id: tenant.property_id,
+                amount: tenant.monthly_rent,
+                payment_date: new Date(),
+                payment_type: 'Rent',
+                payment_method: 'Auto-recorded',
+                paid: true,
+                month: paymentMonth,
+                year: paymentYear,
+                created_at: new Date()
+            };
+
+            await db.collection('payments').insertOne(payment);
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Payment status updated',
+            updated: updateResult.modifiedCount > 0
+        });
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
 });
 
 // API endpoint to get all payments
@@ -1190,6 +1220,51 @@ app.delete('/api/mileage/:id', async (req, res) => {
     }
 });
 
+// Add new endpoint to update tenant payment status
+app.put('/api/tenants/:id/payment-status', async (req, res) => {
+    try {
+        const db = getDb();
+        const { id } = req.params;
+        const { hasPaid, paymentMonth, paymentYear } = req.body;
+
+        // Update tenant payment status
+        await db.collection('tenants').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { 
+                lastPaymentStatus: hasPaid,
+                lastPaymentMonth: paymentMonth,
+                lastPaymentYear: paymentYear,
+                lastPaymentDate: new Date()
+            }}
+        );
+
+        // If paid, create payment record automatically
+        if (hasPaid) {
+            const tenant = await db.collection('tenants').findOne({ _id: new ObjectId(id) });
+            const payment = {
+                tenant_id: id,
+                tenant_name: tenant.name,
+                property_id: tenant.property_id,
+                amount: tenant.monthly_rent,
+                payment_date: new Date(),
+                payment_type: 'Rent',
+                payment_method: 'Cash', // Default method
+                paid: true,
+                month: paymentMonth,
+                year: paymentYear,
+                created_at: new Date()
+            };
+
+            await db.collection('payments').insertOne(payment);
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        res.status(500).json({ error: 'Error updating payment status' });
+    }
+});
+
 // Ensure all routes are handled properly
 app.get('/', (req, res) => {
     if (req.session && req.session.userId) {
@@ -1233,4 +1308,116 @@ process.on('SIGINT', async () => {
     console.log('Database connection closed');
   }
   process.exit(0);
+});
+
+// POST endpoint for creating/updating tenants
+app.post('/api/tenants', async (req, res) => {
+    try {
+        const db = getDb();
+        const tenant = {
+            name: req.body.name,
+            property_id: req.body.property_id,
+            property_address: req.body.property_address,
+            monthly_rent: parseFloat(req.body.monthly_rent),
+            lease_start: new Date(req.body.lease_start),
+            lease_end: new Date(req.body.lease_end),
+            // Add payment tracking fields
+            lastPaymentStatus: false,
+            lastPaymentMonth: null,
+            lastPaymentYear: null,
+            lastPaymentDate: null,
+            paymentHistory: [],
+            created_at: new Date()
+        };
+        
+        const result = await db.collection('tenants').insertOne(tenant);
+        res.status(201).json({ ...tenant, _id: result.insertedId });
+    } catch (error) {
+        console.error('Error creating tenant:', error);
+        res.status(500).json({ error: 'Error creating tenant' });
+    }
+});
+
+// PUT endpoint for updating payment status
+app.put('/api/tenants/:id/payment-status', async (req, res) => {
+    try {
+        const db = getDb();
+        const { id } = req.params;
+        const { hasPaid, paymentMonth, paymentYear } = req.body;
+        
+        const tenant = await db.collection('tenants').findOne({ _id: new ObjectId(id) });
+        if (!tenant) {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+
+        const paymentRecord = {
+            date: new Date(),
+            amount: tenant.monthly_rent,
+            month: paymentMonth,
+            year: paymentYear,
+            status: hasPaid ? 'paid' : 'unpaid'
+        };
+
+        // Update tenant payment status and history
+        await db.collection('tenants').updateOne(
+            { _id: new ObjectId(id) },
+            {
+                $set: {
+                    lastPaymentStatus: hasPaid,
+                    lastPaymentMonth: paymentMonth,
+                    lastPaymentYear: paymentYear,
+                    lastPaymentDate: new Date()
+                },
+                $push: {
+                    paymentHistory: paymentRecord
+                }
+            }
+        );
+
+        // If paid, create automatic payment record
+        if (hasPaid) {
+            const payment = {
+                tenant_id: id,
+                tenant_name: tenant.name,
+                property_id: tenant.property_id,
+                amount: tenant.monthly_rent,
+                payment_date: new Date(),
+                payment_type: 'Rent',
+                payment_method: 'Auto-recorded',
+                paid: true,
+                month: paymentMonth,
+                year: paymentYear,
+                created_at: new Date()
+            };
+
+            await db.collection('payments').insertOne(payment);
+        }
+
+        res.json({ success: true, message: 'Payment status updated' });
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        res.status(500).json({ error: 'Error updating payment status' });
+    }
+});
+
+// GET endpoint for tenant payment history
+app.get('/api/tenants/:id/payment-history', async (req, res) => {
+    try {
+        const db = getDb();
+        const { id } = req.params;
+        
+        const tenant = await db.collection('tenants').findOne(
+            { _id: new ObjectId(id) },
+            { projection: { paymentHistory: 1 } }
+        );
+        
+        if (!tenant) {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+
+        res.json(tenant.paymentHistory || []);
+    } catch (error) {
+        console.error('Error fetching payment history:', error);
+        res.status(500).json({ error: 'Error fetching payment history' });
+    }
 });
