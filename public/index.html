@@ -332,77 +332,73 @@
         // Replace Chart.js implementation with ApexCharts
         async function loadRentMortgageData() {
             try {
-                // Get both properties and payments data
-                const [propertiesResponse, paymentsResponse] = await Promise.all([
-                    fetch('/api/properties'),
-                    fetch('/api/payments')
+                const [paymentsResponse, billsResponse] = await Promise.all([
+                    fetch('/api/payments'),
+                    fetch('/api/bills')
                 ]);
                 
-                const properties = await propertiesResponse.json();
                 const payments = await paymentsResponse.json();
+                const bills = await billsResponse.json();
 
-                // Get last 6 months dates
                 const months = [];
-                const rentData = [];
-                const mortgageData = [];
+                const incomeData = [];
+                const expenseData = [];
                 const today = new Date();
                 
                 for (let i = 5; i >= 0; i--) {
                     const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
                     months.push(date.toLocaleString('default', { month: 'short', year: '2-digit' }));
                     
-                    // Calculate total mortgage for this month
-                    const totalMortgage = properties.reduce((sum, property) => 
-                        sum + (property.monthly_mortgage || 0), 0);
-                    mortgageData.push(totalMortgage);
-                    
-                    // Calculate actual rent payments received for this month
                     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
                     const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
                     
-                    const monthlyRent = payments
+                    // Calculate total income (all payments)
+                    const monthlyIncome = payments
                         .filter(payment => {
                             const paymentDate = new Date(payment.payment_date);
                             return paymentDate >= monthStart && 
                                    paymentDate <= monthEnd && 
-                                   payment.payment_type === 'Rent' &&
                                    payment.paid;
                         })
                         .reduce((sum, payment) => sum + (payment.amount || 0), 0);
                     
-                    rentData.push(monthlyRent);
+                    // Calculate total expenses (all bills)
+                    const monthlyExpenses = bills
+                        .filter(bill => {
+                            const dueDate = new Date(bill.due_date);
+                            return dueDate >= monthStart && 
+                                   dueDate <= monthEnd;
+                        })
+                        .reduce((sum, bill) => sum + (bill.amount || 0), 0);
+                    
+                    incomeData.push(monthlyIncome);
+                    expenseData.push(monthlyExpenses);
                 }
 
                 const options = {
                     series: [{
-                        name: 'Rent Collected',
-                        data: rentData
+                        name: 'Income',
+                        data: incomeData
                     }, {
-                        name: 'Mortgage Due',
-                        data: mortgageData
+                        name: 'Expenses',
+                        data: expenseData
                     }],
                     chart: {
                         type: 'line',
                         height: 350,
-                        zoom: {
-                            enabled: false
-                        }
+                        zoom: { enabled: false }
                     },
-                    colors: ['#2ecc71', '#e74c3c'],
+                    colors: ['#2ecc71', '#e74c3c'], // Green for income, red for expenses
                     stroke: {
                         curve: 'straight',
                         width: 3
                     },
                     xaxis: {
                         categories: months,
-                        title: {
-                            text: 'Month'
-                        }
+                        title: { text: 'Month' }
                     },
                     yaxis: {
-                        title: {
-                            text: 'Amount ($)'
-                        },
+                        title: { text: 'Amount ($)' },
                         labels: {
                             formatter: function(value) {
                                 return '$' + value.toLocaleString();
@@ -410,7 +406,7 @@
                         }
                     },
                     title: {
-                        text: 'Monthly Rent Collections vs Mortgage Payments',
+                        text: 'Monthly Income vs Expenses',
                         align: 'center'
                     },
                     grid: {
@@ -432,7 +428,7 @@
                 const chart = new ApexCharts(document.querySelector("#rentMortgageChart"), options);
                 chart.render();
             } catch (error) {
-                console.error('Error loading rent vs mortgage data:', error);
+                console.error('Error loading financial data:', error);
             }
         }
 
