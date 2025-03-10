@@ -58,16 +58,12 @@ app.use(session({
         autoRemove: 'native',
        // stringify: false // Add this to prevent session serialization issues
     }),
-    cookie: {
-        secure: process.env.NODE_ENV === 'production', // Only set to true if using HTTPS
-        
-        sameSite: 'lax', // Important for cross-site cookies
-        maxAge: 24 * 60 * 60 * 1000,
-       // domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Add this for Render
-    },
-      name: 'sid'
-  }));
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
 
+  }));
 
 
 // Auth middleware
