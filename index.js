@@ -56,22 +56,19 @@ app.use(session({
         collectionName: 'sessions',
         ttl: 24 * 60 * 60,
         autoRemove: 'native',
-        stringify: false // Add this to prevent session serialization issues
+       // stringify: false // Add this to prevent session serialization issues
     }),
     cookie: {
         secure: process.env.NODE_ENV === 'production', // Only set to true if using HTTPS
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Important for cross-site cookies
+        
+        sameSite: 'lax', // Important for cross-site cookies
         maxAge: 24 * 60 * 60 * 1000,
-        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Add this for Render
+       // domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Add this for Render
     },
-    proxy: process.env.NODE_ENV === 'production' // Add this for proper cookie handling behind proxy
-}));
+      name: 'sid'
+  }));
 
-// Add this right after the session middleware
-if (process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1); // trust first proxy
-}
+
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
