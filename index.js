@@ -52,7 +52,7 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
-        dbName: 'LandlordTest',
+        dbName: 'your_db_name',
         collectionName: 'sessions',
         ttl: 24 * 60 * 60,
         autoRemove: 'native'
@@ -67,8 +67,6 @@ app.use(session({
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
-    console.log('Checking auth:', req.path, req.session);
-    
     if (req.path === '/login.html' || 
         req.path === '/api/auth/login' || 
         req.path === '/api/auth/register') {
@@ -99,6 +97,38 @@ app.get('', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Registration route - add this before the login route
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const db = getDb();
+        const usersCollection = db.collection('users');
+
+        // Check if user already exists
+        const existingUser = await usersCollection.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Email already registered' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new user
+        const newUser = {
+            email,
+            password: hashedPassword,
+            created_at: new Date()
+        };
+
+        await usersCollection.insertOne(newUser);
+
+        res.status(201).json({ success: true, message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 // Update login route
 app.post('/api/auth/login', async (req, res) => {
     try {
@@ -127,11 +157,43 @@ app.post('/api/auth/login', async (req, res) => {
             });
         });
 
-        console.log('Login successful, session:', req.session);
+        //console.log('Login successful, session:', req.session);
         res.json({ success: true, message: 'Login successful' });
         
     } catch (error) {
         console.error('Login error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Registration route
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const db = getDb();
+        const usersCollection = db.collection('users');
+
+        // Check if user already exists
+        const existingUser = await usersCollection.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Email already registered' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new user
+        const newUser = {
+            email,
+            password: hashedPassword,
+            created_at: new Date()
+        };
+
+        await usersCollection.insertOne(newUser);
+
+        res.status(201).json({ success: true, message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
@@ -157,37 +219,35 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 // POST route for adding tenants
-app.post('/tenants', async (req, res) => {
-  try {
-    const db = getDb();
-    const tenantsCollection = db.collection('tenants');
-    const propertiesCollection = db.collection('properties');
-
-    // Check if property exists
-    const { ObjectId } = require('mongodb');
-    const property = await propertiesCollection.findOne({ _id: new ObjectId(req.body.property_id) });
-    if (!property && req.body.property_id) {
-      return res.status(400).send('Selected property does not exist');
+app.post('/api/tenants', async (req, res) => {
+    try {
+        const db = getDb();
+        const tenant = {
+            name: req.body.name,
+            unit_number: req.body.unit_number,
+            property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
+            property_address: req.body.property_address,
+            lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
+            lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
+            monthly_rent: parseFloat(req.body.monthly_rent) || 0,
+            deposit: parseFloat(req.body.deposit) || 0,
+            phone: req.body.phone || '',
+            email: req.body.email || '',
+            // Payment tracking fields
+            lastPaymentStatus: false,
+            lastPaymentMonth: null,
+            lastPaymentYear: null,
+            lastPaymentDate: null,
+            paymentHistory: [],
+            created_at: new Date()
+        };
+        
+        const result = await db.collection('tenants').insertOne(tenant);
+        res.status(201).json({ ...tenant, _id: result.insertedId });
+    } catch (error) {
+        console.error('Error creating tenant:', error);
+        res.status(500).json({ error: 'Error creating tenant' });
     }
-
-    const tenant = {
-      name: req.body.name,
-      unit_number: req.body.unit_number,
-      property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
-      lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
-      lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
-      monthly_rent: parseFloat(req.body.monthly_rent) || 0,
-      deposit: parseFloat(req.body.deposit) || 0,
-      phone: req.body.phone || '',
-      email: req.body.email || '',
-      created_at: new Date()
-    };
-    await tenantsCollection.insertOne(tenant);
-    res.send('Tenant added successfully');
-  } catch (error) {
-    console.error('Error adding tenant:', error);
-    res.status(500).send('Error adding tenant');
-  }
 });
 
 // POST route for adding payments
@@ -229,43 +289,73 @@ app.get('/api/tenants', async (req, res) => {
         const db = getDb();
         const query = {};
         
-        // Handle property filter
         if (req.query.property_id) {
-            query.property_id = req.query.property_id;
+            query.property_id = new ObjectId(req.query.property_id);
         }
-        
+
         const tenants = await db.collection('tenants')
             .find(query)
             .sort({ name: 1 })
             .toArray();
+
+        // Enhance tenants with current month payment status
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+
+        const enhancedTenants = tenants.map(tenant => ({
+            ...tenant,
+            currentMonthPaid: tenant.lastPaymentStatus && 
+                            tenant.lastPaymentMonth === currentMonth &&
+                            tenant.lastPaymentYear === currentYear
+        }));
             
-        res.json(tenants);
+        res.json(enhancedTenants);
     } catch (error) {
         console.error('Error fetching tenants:', error);
         res.status(500).json({ error: 'Failed to fetch tenants' });
     }
 });
 
+// Remove all other versions of the payment status endpoint and replace with this one
 app.put('/api/tenants/:id/payment-status', async (req, res) => {
     try {
         const db = getDb();
         const { id } = req.params;
         const { hasPaid, paymentMonth, paymentYear } = req.body;
-        const { ObjectId } = require('mongodb');
-        // Find tenant and their property info
         
-        const tenant = await db.collection('tenants').findOne({ 
-            _id: new ObjectId(id) 
-        });
-
+        // Get tenant details
+        const tenant = await db.collection('tenants').findOne({ _id: new ObjectId(id) });
         if (!tenant) {
             return res.status(404).json({ error: 'Tenant not found' });
         }
 
-        // Update tenant payment status
+        // Check if payment already exists for this month/year
+        const existingPayment = await db.collection('payments').findOne({
+            tenant_id: new ObjectId(id),
+            month: paymentMonth,
+            year: paymentYear
+        });
+
+        if (existingPayment && hasPaid) {
+            return res.status(400).json({ 
+                error: 'Payment already recorded for this month',
+                existingPayment 
+            });
+        }
+
+        const paymentRecord = {
+            date: new Date(),
+            amount: tenant.monthly_rent,
+            month: paymentMonth,
+            year: paymentYear,
+            status: hasPaid ? 'paid' : 'unpaid'
+        };
+
+        // Update tenant's payment status and history
         const updateResult = await db.collection('tenants').updateOne(
             { _id: new ObjectId(id) },
-            { 
+            {
                 $set: {
                     lastPaymentStatus: hasPaid,
                     lastPaymentMonth: paymentMonth,
@@ -274,19 +364,18 @@ app.put('/api/tenants/:id/payment-status', async (req, res) => {
                 },
                 $push: {
                     paymentHistory: {
-                        date: new Date(),
-                        status: hasPaid ? 'paid' : 'unpaid',
-                        month: paymentMonth,
-                        year: paymentYear
+                        $each: [paymentRecord],
+                        $sort: { date: -1 },
+                        $slice: 12 // Keep last 12 months of history
                     }
                 }
             }
         );
 
-        // If marked as paid, create payment record
-        if (hasPaid) {
+        // If marking as paid, create payment record
+        if (hasPaid && !existingPayment) {
             const payment = {
-                tenant_id: id,
+                tenant_id: new ObjectId(id),
                 tenant_name: tenant.name,
                 property_id: tenant.property_id,
                 amount: tenant.monthly_rent,
@@ -305,11 +394,13 @@ app.put('/api/tenants/:id/payment-status', async (req, res) => {
         res.json({ 
             success: true, 
             message: 'Payment status updated',
-            updated: updateResult.modifiedCount > 0
+            updated: updateResult.modifiedCount > 0,
+            paymentRecord
         });
+
     } catch (error) {
         console.error('Error updating payment status:', error);
-        res.status(500).json({ error: 'Failed to update payment status' });
+        res.status(500).json({ error: 'Error updating payment status' });
     }
 });
 
@@ -392,13 +483,13 @@ app.get('/api/properties/:id/payments', async (req, res) => {
 app.get('/api/tenants/:id/payments', async (req, res) => {
   try {
     const db = getDb();
-    const paymentsCollection = db.collection('payments');
-    const { ObjectId } = require('mongodb');
-
-    const payments = await paymentsCollection.find({ 
-      tenant_id: new ObjectId(req.params.id) 
-    }).toArray();
-
+    const { id } = req.params;
+    
+    const payments = await db.collection('payments')
+        .find({ tenant_id: new ObjectId(id) })
+        .sort({ payment_date: -1 })
+        .toArray();
+    
     res.json(payments);
   } catch (error) {
     console.error('Error fetching tenant payments:', error);
@@ -851,25 +942,6 @@ app.put('/api/todos/:id', async (req, res) => {
   }
 });
 
-// Delete a todo
-app.delete('/api/todos/:id', async (req, res) => {
-  try {
-    const db = getDb();
-    const todosCollection = db.collection('todos');
-    const { ObjectId } = require('mongodb');
-    const result = await todosCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-
-    if (result.deletedCount === 1) {
-      res.json({ message: 'Todo deleted successfully' });
-    } else {
-      res.status(404).json({ error: 'Todo not found' });
-    }
-  } catch (error) {
-    console.error('Error deleting todo:', error);
-    res.status(500).json({ error: 'Failed to delete todo' });
-  }
-});
-
 // Get todo statistics for a property
 app.get('/api/properties/:id/todo-stats', async (req, res) => {
   try {
@@ -1012,7 +1084,9 @@ app.post('/api/bills', async (req, res) => {
       bill_period_start: req.body.bill_period_start ? new Date(req.body.bill_period_start) : null,
       bill_period_end: req.body.bill_period_end ? new Date(req.body.bill_period_end) : null,
       notes: req.body.notes || '',
-      created_at: new Date()
+      created_at: new Date(),
+      recurring_monthly: req.body.recurring_monthly || false,
+      parent_bill_id: null
     };
 
     const result = await billsCollection.insertOne(bill);
@@ -1030,18 +1104,22 @@ app.put('/api/bills/:id', async (req, res) => {
     const billsCollection = db.collection('bills');
     const { ObjectId } = require('mongodb');
     
+    // Convert boolean values properly
     const bill = {
       property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
       bill_type: req.body.bill_type,
       amount: parseFloat(req.body.amount) || 0,
       due_date: req.body.due_date ? new Date(req.body.due_date) : null,
-      paid: req.body.paid === 'true' || req.body.paid === true,
+      paid: req.body.paid === true,
       payment_date: req.body.payment_date ? new Date(req.body.payment_date) : null,
       bill_period_start: req.body.bill_period_start ? new Date(req.body.bill_period_start) : null,
       bill_period_end: req.body.bill_period_end ? new Date(req.body.bill_period_end) : null,
       notes: req.body.notes || '',
+      recurring_monthly: req.body.recurring_monthly === true,
       updated_at: new Date()
     };
+
+   // console.log('Updating bill with data:', bill); // Debug log
 
     const result = await billsCollection.updateOne(
       { _id: new ObjectId(req.params.id) },
@@ -1049,7 +1127,7 @@ app.put('/api/bills/:id', async (req, res) => {
     );
 
     if (result.matchedCount === 1) {
-      res.json({ message: 'Bill updated successfully' });
+      res.json({ message: 'Bill updated successfully', data: bill });
     } else {
       res.status(404).json({ error: 'Bill not found' });
     }
@@ -1094,6 +1172,66 @@ app.get('/api/properties/:id/bills', async (req, res) => {
     console.error('Error fetching property bills:', error);
     res.status(500).json({ error: 'Failed to fetch property bills' });
   }
+});
+
+// Get recurring bills by property
+app.get('/api/properties/:id/recurring-bills', async (req, res) => {
+    try {
+        const db = getDb();
+        const billsCollection = db.collection('bills');
+        const { ObjectId } = require('mongodb');
+        
+        const bills = await billsCollection.find({ 
+            property_id: new ObjectId(req.params.id),
+            recurring_monthly: true
+        }).toArray();
+        
+        res.json(bills);
+    } catch (error) {
+        console.error('Error fetching recurring bills:', error);
+        res.status(500).json({ error: 'Failed to fetch recurring bills' });
+    }
+});
+
+// Create recurring bill instance for current month
+app.post('/api/bills/create-monthly-instance', async (req, res) => {
+    try {
+        const db = getDb();
+        const billsCollection = db.collection('bills');
+        const { bill_id } = req.body;
+
+        // Get the template bill
+        const templateBill = await billsCollection.findOne({ 
+            _id: new ObjectId(bill_id)
+        });
+
+        if (!templateBill) {
+            return res.status(404).json({ error: 'Template bill not found' });
+        }
+
+        // Create new instance for current month
+        const currentDate = new Date();
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+        const newBill = {
+            ...templateBill,
+            _id: new ObjectId(),
+            parent_bill_id: templateBill._id,
+            due_date: startOfMonth,
+            bill_period_start: startOfMonth,
+            bill_period_end: endOfMonth,
+            paid: false,
+            payment_date: null,
+            created_at: new Date()
+        };
+
+        await billsCollection.insertOne(newBill);
+        res.json(newBill);
+    } catch (error) {
+        console.error('Error creating monthly bill instance:', error);
+        res.status(500).json({ error: 'Failed to create monthly bill instance' });
+    }
 });
 
 // Mileage routes
@@ -1310,96 +1448,6 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// POST endpoint for creating/updating tenants
-app.post('/api/tenants', async (req, res) => {
-    try {
-        const db = getDb();
-        const tenant = {
-            name: req.body.name,
-            property_id: req.body.property_id,
-            property_address: req.body.property_address,
-            monthly_rent: parseFloat(req.body.monthly_rent),
-            lease_start: new Date(req.body.lease_start),
-            lease_end: new Date(req.body.lease_end),
-            // Add payment tracking fields
-            lastPaymentStatus: false,
-            lastPaymentMonth: null,
-            lastPaymentYear: null,
-            lastPaymentDate: null,
-            paymentHistory: [],
-            created_at: new Date()
-        };
-        
-        const result = await db.collection('tenants').insertOne(tenant);
-        res.status(201).json({ ...tenant, _id: result.insertedId });
-    } catch (error) {
-        console.error('Error creating tenant:', error);
-        res.status(500).json({ error: 'Error creating tenant' });
-    }
-});
-
-// PUT endpoint for updating payment status
-app.put('/api/tenants/:id/payment-status', async (req, res) => {
-    try {
-        const db = getDb();
-        const { id } = req.params;
-        const { hasPaid, paymentMonth, paymentYear } = req.body;
-        
-        const tenant = await db.collection('tenants').findOne({ _id: new ObjectId(id) });
-        if (!tenant) {
-            return res.status(404).json({ error: 'Tenant not found' });
-        }
-
-        const paymentRecord = {
-            date: new Date(),
-            amount: tenant.monthly_rent,
-            month: paymentMonth,
-            year: paymentYear,
-            status: hasPaid ? 'paid' : 'unpaid'
-        };
-
-        // Update tenant payment status and history
-        await db.collection('tenants').updateOne(
-            { _id: new ObjectId(id) },
-            {
-                $set: {
-                    lastPaymentStatus: hasPaid,
-                    lastPaymentMonth: paymentMonth,
-                    lastPaymentYear: paymentYear,
-                    lastPaymentDate: new Date()
-                },
-                $push: {
-                    paymentHistory: paymentRecord
-                }
-            }
-        );
-
-        // If paid, create automatic payment record
-        if (hasPaid) {
-            const payment = {
-                tenant_id: id,
-                tenant_name: tenant.name,
-                property_id: tenant.property_id,
-                amount: tenant.monthly_rent,
-                payment_date: new Date(),
-                payment_type: 'Rent',
-                payment_method: 'Auto-recorded',
-                paid: true,
-                month: paymentMonth,
-                year: paymentYear,
-                created_at: new Date()
-            };
-
-            await db.collection('payments').insertOne(payment);
-        }
-
-        res.json({ success: true, message: 'Payment status updated' });
-    } catch (error) {
-        console.error('Error updating payment status:', error);
-        res.status(500).json({ error: 'Error updating payment status' });
-    }
-});
-
 // GET endpoint for tenant payment history
 app.get('/api/tenants/:id/payment-history', async (req, res) => {
     try {
@@ -1420,4 +1468,65 @@ app.get('/api/tenants/:id/payment-history', async (req, res) => {
         console.error('Error fetching payment history:', error);
         res.status(500).json({ error: 'Error fetching payment history' });
     }
+});
+
+// Add new bills stats endpoint
+app.get('/api/bills/stats', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    
+    const totalBills = await billsCollection.countDocuments();
+    
+    const unpaidBills = await billsCollection.countDocuments({ paid: false });
+    
+    const bills = await billsCollection.find({ paid: false }).toArray();
+    const totalAmountDue = bills.reduce((sum, bill) => sum + (bill.amount || 0), 0);
+
+    res.json({
+      totalBills,
+      unpaidBills,
+      totalAmountDue
+    });
+  } catch (error) {
+    console.error('Error fetching bill statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch bill statistics' });
+  }
+});
+
+// Update the bill PUT endpoint
+app.put('/api/bills/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const billsCollection = db.collection('bills');
+    const { ObjectId } = require('mongodb');
+    
+    const bill = {
+      property_id: req.body.property_id ? new ObjectId(req.body.property_id) : null,
+      bill_type: req.body.bill_type,
+      amount: parseFloat(req.body.amount) || 0,
+      due_date: req.body.due_date ? new Date(req.body.due_date) : null,
+      paid: req.body.paid === true,
+      payment_date: req.body.payment_date ? new Date(req.body.payment_date) : null,
+      bill_period_start: req.body.bill_period_start ? new Date(req.body.bill_period_start) : null,
+      bill_period_end: req.body.bill_period_end ? new Date(req.body.bill_period_end) : null,
+      notes: req.body.notes || '',
+      recurring_monthly: req.body.recurring_monthly === true,
+      updated_at: new Date()
+    };
+
+    const result = await billsCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: bill }
+    );
+
+    if (result.matchedCount === 1) {
+      res.json({ message: 'Bill updated successfully', data: bill });
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
+    }
+  } catch (error) {
+    console.error('Error updating bill:', error);
+    res.status(500).json({ error: 'Failed to update bill' });
+  }
 });

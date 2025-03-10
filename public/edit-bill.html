@@ -305,82 +305,75 @@
     <div class="main-content">
         <h1 class="page-title" id="billTitle">Edit Bill</h1>
 
-        <div class="bill-stats">
-            <div class="stat-card">
-                <div class="stat-label">Total Bills</div>
-                <div class="stat-value" id="totalBills">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Bills Due</div>
-                <div class="stat-value" id="billsDue">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Amount Due</div>
-                <div class="stat-value" id="totalAmount">$0.00</div>
-            </div>
-        </div>
-
         <div class="data-container">
-            <form id="editBillForm" class="form-grid">
-                <div class="form-group">
-                    <label for="property_id">Property</label>
-                    <select id="property_id" name="property_id" required>
-                        <option value="">Select a property</option>
-                    </select>
-                </div>
+            <form id="editBillForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="property_id">Property</label>
+                        <select id="property_id" name="property_id" required>
+                            <option value="">Select a property</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="bill_type">Bill Type</label>
-                    <select id="bill_type" name="bill_type" required>
-                        <option value="Utilities">Utilities</option>
-                        <option value="Insurance">Insurance</option>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Property Tax">Property Tax</option>
-                        <option value="Mortgage">Mortgage</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="bill_type">Bill Type</label>
+                        <select id="bill_type" name="bill_type" required>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Property Tax">Property Tax</option>
+                            <option value="Mortgage">Mortgage</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="amount">Amount ($)</label>
-                    <input type="number" id="amount" name="amount" step="0.01" min="0" required>
-                </div>
+                    <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="due_date">Due Date</label>
-                    <input type="date" id="due_date" name="due_date" required>
-                </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="bill_period_start">Bill Period Start</label>
-                    <input type="date" id="bill_period_start" name="bill_period_start">
-                </div>
+                    <div class="form-group">
+                        <label for="bill_period_start">Bill Period Start</label>
+                        <input type="date" id="bill_period_start" name="bill_period_start">
+                    </div>
 
-                <div class="form-group">
-                    <label for="bill_period_end">Bill Period End</label>
-                    <input type="date" id="bill_period_end" name="bill_period_end">
-                </div>
+                    <div class="form-group">
+                        <label for="bill_period_end">Bill Period End</label>
+                        <input type="date" id="bill_period_end" name="bill_period_end">
+                    </div>
 
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="paid" name="paid">
-                        Mark as Paid
-                    </label>
-                </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="paid" name="paid">
+                            Mark as Paid
+                        </label>
+                    </div>
 
-                <div class="form-group">
-                    <label for="payment_date">Payment Date</label>
-                    <input type="date" id="payment_date" name="payment_date">
-                </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="recurring_monthly" name="recurring_monthly">
+                            Recurring Monthly Bill
+                        </label>
+                    </div>
 
-                <div class="form-group full-width">
-                    <label for="notes">Notes</label>
-                    <textarea id="notes" name="notes" rows="4"></textarea>
-                </div>
+                    <div class="form-group">
+                        <label for="payment_date">Payment Date</label>
+                        <input type="date" id="payment_date" name="payment_date">
+                    </div>
 
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" name="notes" rows="4"></textarea>
+                    </div>
+                </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='view-bills.html'">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Bill</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-bills.html'">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -390,31 +383,22 @@
         const urlParams = new URLSearchParams(window.location.search);
         const billId = urlParams.get('id');
 
-        // Load bill data
         async function loadBillData() {
             try {
+                await loadProperties();
+
                 if (!billId) {
-                    alert('No bill ID provided');
-                    window.location.href = '/view-bills.html';
+                    document.getElementById('billTitle').textContent = 'Add New Bill';
                     return;
                 }
 
-                // Load bill stats
-                const statsResponse = await fetch('/api/bills/stats');
-                const stats = await statsResponse.json();
-                document.getElementById('totalBills').textContent = stats.totalBills || 0;
-                document.getElementById('billsDue').textContent = stats.unpaidBills || 0;
-                document.getElementById('totalAmount').textContent = `$${(stats.totalAmountDue || 0).toFixed(2)}`;
-
-                // Load bill details
                 const billResponse = await fetch(`/api/bills/${billId}`);
                 if (!billResponse.ok) {
                     throw new Error('Failed to fetch bill');
                 }
                 const billData = await billResponse.json();
+                
                 document.getElementById('billTitle').textContent = `Edit Bill: ${billData.bill_type}`;
-
-                // Fill form with bill data
                 Object.entries(billData).forEach(([key, value]) => {
                     const element = document.getElementById(key);
                     if (element) {
@@ -423,19 +407,19 @@
                             if (value) {
                                 element.value = new Date(value).toISOString().split('T')[0];
                             }
-                        } else if (key === 'paid') {
-                            element.checked = value;
+                        } else if (key === 'paid' || key === 'recurring_monthly') {
+                            element.checked = value === true;
                         } else {
                             element.value = value;
                         }
                     }
                 });
-
             } catch (error) {
                 console.error('Error loading bill:', error);
                 alert('Error loading bill data');
             }
         }
+
         async function loadProperties() {
             try {
                 const response = await fetch('/api/properties');
@@ -446,36 +430,43 @@
                 const properties = await response.json();
                 const selectElement = document.getElementById('property_id');
                 
+                while (selectElement.options.length > 1) {
+                    selectElement.remove(1);
+                }
+                
                 properties.forEach(property => {
                     const option = document.createElement('option');
                     option.value = property._id;
-                    option.textContent = `${property.address}, ${property.city} - $${property.rent}/mo`;
+                    option.textContent = `${property.address}, ${property.city}`;
                     selectElement.appendChild(option);
                 });
             } catch (error) {
                 console.error('Error loading properties:', error);
             }
         }
-        // Form submission handler
+
         document.getElementById('editBillForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
             try {
-                const formData = new FormData(this);
                 const billData = {
-                    property_id: formData.get('property_id'),
-                    bill_type: formData.get('bill_type'),
-                    amount: parseFloat(formData.get('amount')) || 0,
-                    due_date: formData.get('due_date'),
-                    bill_period_start: formData.get('bill_period_start'),
-                    bill_period_end: formData.get('bill_period_end'),
-                    paid: formData.get('paid') === 'on',
-                    payment_date: formData.get('payment_date'),
-                    notes: formData.get('notes')
+                    property_id: document.getElementById('property_id').value,
+                    bill_type: document.getElementById('bill_type').value,
+                    amount: parseFloat(document.getElementById('amount').value) || 0,
+                    due_date: document.getElementById('due_date').value,
+                    bill_period_start: document.getElementById('bill_period_start').value,
+                    bill_period_end: document.getElementById('bill_period_end').value,
+                    paid: document.getElementById('paid').checked,
+                    recurring_monthly: document.getElementById('recurring_monthly').checked,
+                    payment_date: document.getElementById('payment_date').value,
+                    notes: document.getElementById('notes').value
                 };
+
+                const url = billId ? `/api/bills/${billId}` : '/api/bills';
+                const method = billId ? 'PUT' : 'POST';
                 
-                const response = await fetch(`/api/bills/${billId}`, {
-                    method: 'PUT',
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -483,23 +474,30 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to update bill');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save bill');
                 }
                 
-                alert('Bill updated successfully');
+                alert(billId ? 'Bill updated successfully' : 'Bill added successfully');
                 window.location.href = '/view-bills.html';
             } catch (error) {
-                console.error('Error updating bill:', error);
-                alert('Error updating bill. Please try again.');
+                console.error('Error saving bill:', error);
+                alert('Error saving bill. Please try again.');
             }
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', loadBillData);
-
-        // Mobile menu toggle
         document.getElementById('menuToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
+        });
+
+        document.addEventListener('DOMContentLoaded', loadBillData);
+
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
+            });
         });
     </script>
 </body>

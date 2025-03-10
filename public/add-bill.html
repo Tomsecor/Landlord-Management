@@ -389,6 +389,13 @@
                     </div>
 
                     <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="recurring_monthly" name="recurring_monthly">
+                            Recurring Monthly Bill
+                        </label>
+                    </div>
+
+                    <div class="form-group">
                         <label for="payment_date">Payment Date</label>
                         <input type="date" id="payment_date" name="payment_date">
                     </div>
@@ -437,17 +444,17 @@
             event.preventDefault();
             
             try {
-                const formData = new FormData(this);
                 const billData = {
-                    property_id: formData.get('property_id'),
-                    bill_type: formData.get('bill_type'),
-                    amount: parseFloat(formData.get('amount')) || 0,
-                    due_date: formData.get('due_date'),
-                    bill_period_start: formData.get('bill_period_start'),
-                    bill_period_end: formData.get('bill_period_end'),
-                    paid: formData.get('paid') === 'on',
-                    payment_date: formData.get('payment_date'),
-                    notes: formData.get('notes')
+                    property_id: document.getElementById('property_id').value,
+                    bill_type: document.getElementById('bill_type').value,
+                    amount: parseFloat(document.getElementById('amount').value) || 0,
+                    due_date: document.getElementById('due_date').value,
+                    bill_period_start: document.getElementById('bill_period_start').value,
+                    bill_period_end: document.getElementById('bill_period_end').value,
+                    paid: document.getElementById('paid').checked,
+                    recurring_monthly: document.getElementById('recurring_monthly').checked,
+                    payment_date: document.getElementById('payment_date').value,
+                    notes: document.getElementById('notes').value
                 };
                 
                 const response = await fetch('/api/bills', {

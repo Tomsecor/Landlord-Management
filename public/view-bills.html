@@ -320,6 +320,9 @@
             <a href="#" class="menu-item">
                 <i>⚙️</i> Settings
             </a>
+            <a href="#" class="menu-item" id="logoutBtn" style="margin-top: auto; color: #e74c3c;">
+                <i>🚪</i> Logout
+            </a>
         </nav>
     </div>
     
@@ -374,12 +377,13 @@
                             <th>Status</th>
                             <th>Payment Date</th>
                             <th>Period</th>
+                            <th>Recurring</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="billsTableBody">
                         <tr>
-                            <td colspan="8" style="text-align: center;">Loading bills...</td>
+                            <td colspan="9" style="text-align: center;">Loading bills...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -395,16 +399,37 @@
     </div>
 
     <script>
+        // Add logout functionality at the top of the script
+        document.getElementById('logoutBtn').addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/auth/logout', {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+        });
+
         let properties = [];
 
+        // Update the loadData function to handle errors better
         async function loadData() {
             try {
                 const propertiesResponse = await fetch('/api/properties');
+                if (!propertiesResponse.ok) throw new Error('Failed to fetch properties');
                 properties = await propertiesResponse.json();
                 
                 await loadBills();
             } catch (error) {
                 console.error('Error loading data:', error);
+                document.getElementById('billsTableBody').innerHTML = 
+                    '<tr><td colspan="9" style="text-align: center;">Error loading data. Please try again.</td></tr>';
             }
         }
 
@@ -426,15 +451,21 @@
             } catch (error) {
                 console.error('Error loading bills:', error);
                 document.getElementById('billsTableBody').innerHTML = 
-                    '<tr><td colspan="8" style="text-align: center;">Error loading bills. Please try again.</td></tr>';
+                    '<tr><td colspan="9" style="text-align: center;">Error loading bills. Please try again.</td></tr>';
             }
         }
 
+        // Update the error handling in displayBills
         function displayBills(bills) {
             const tbody = document.getElementById('billsTableBody');
             
+            if (!Array.isArray(bills)) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Error loading bills data</td></tr>';
+                return;
+            }
+
             if (bills.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No bills found. Add your first bill!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No bills found. Add your first bill!</td></tr>';
                 return;
             }
 
@@ -443,6 +474,8 @@
                 const status = bill.paid ? 
                     `<span class="status status-paid">Paid</span>` : 
                     `<span class="status status-unpaid">Unpaid</span>`;
+                const recurringBadge = bill.recurring_monthly ? 
+                    '<span class="badge badge-info">Monthly</span>' : '';
 
                 return `
                     <tr>
@@ -453,9 +486,13 @@
                         <td>${status}</td>
                         <td>${bill.payment_date ? new Date(bill.payment_date).toLocaleDateString() : '-'}</td>
                         <td>${formatPeriod(bill.bill_period_start, bill.bill_period_end)}</td>
+                        <td>${recurringBadge}</td>
                         <td class="actions">
                             <button class="edit-btn" onclick="editBill('${bill._id}')">✏️</button>
                             <button class="delete-btn" onclick="deleteBill('${bill._id}')">🗑️</button>
+                            ${bill.recurring_monthly ? 
+                                `<button class="create-instance-btn" onclick="createMonthlyInstance('${bill._id}')">📅</button>` 
+                                : ''}
                         </td>
                     </tr>
                 `;
@@ -484,8 +521,33 @@
             window.location.href = `edit-bill.html?id=${id}`;
         }
 
+        async function createMonthlyInstance(billId) {
+            try {
+                const response = await fetch('/api/bills/create-monthly-instance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ bill_id: billId })
+                });
+
+                if (!response.ok) throw new Error('Failed to create monthly instance');
+                
+                await loadBills();
+                alert('Created monthly bill instance');
+            } catch (error) {
+                console.error('Error creating monthly instance:', error);
+                alert('Error creating monthly bill instance');
+            }
+        }
+
         // Event listeners
-        document.addEventListener('DOMContentLoaded', loadData);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData().catch(error => {
+                console.error('Failed to initialize page:', error);
+                alert('Error loading page data. Please refresh.');
+            });
+        });
 
         // Mobile menu toggle
         document.getElementById('menuToggle').addEventListener('click', function() {

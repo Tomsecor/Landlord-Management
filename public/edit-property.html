@@ -58,21 +58,26 @@
             font-size: 1.2rem;
         }
         .main-content {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
+            display: flex; /* Use flexbox to align form and data grids */
+        }
+        .property-form-container {
+            width: 30%; /* Adjust width as needed */
+            padding-right: 20px;
+        }
+        .data-grids-container {
+            width: 70%; /* Adjust width as needed */
         }
         .page-title {
-            margin-bottom: 20px;
-            color: #2c3e50;
-            font-size: 2rem;
+            margin-bottom: 10px; /* Reduce margin */
+            font-size: 1.2rem; /* Reduce font size */
         }
         .data-container {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 20px;
+            padding: 10px; /* Reduce padding */
             overflow: hidden;
+            margin-bottom: 10px; /* Reduce margin */
         }
         .property-stats {
             display: grid;
@@ -103,11 +108,11 @@
         }
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Smaller form fields */
+            gap: 10px; /* Reduce gap */
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 10px; /* Reduce margin */
         }
         .form-group.full-width {
             grid-column: 1 / -1;
@@ -117,6 +122,7 @@
             margin-bottom: 5px;
             font-weight: bold;
             color: #2c3e50;
+            font-size: 0.8rem; /* Smaller labels */
         }
         input[type="text"],
         input[type="number"],
@@ -124,10 +130,10 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px;
+            padding: 6px; /* Smaller input fields */
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 12px; /* Smaller font size */
             box-sizing: border-box;
         }
         textarea {
@@ -141,11 +147,11 @@
             margin-top: 20px;
         }
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px; /* Smaller buttons */
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 12px; /* Smaller font size */
             transition: background-color 0.3s;
         }
         .btn-primary {
@@ -190,12 +196,13 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 5px; /* Reduce margin */
         }
         th, td {
-            padding: 12px 15px;
+            padding: 6px 8px; /* Reduce padding */
             text-align: left;
             border-bottom: 1px solid #eee;
+            font-size: 0.8rem; /* Reduce font size */
         }
         th {
             background-color: #f8f9fa;
@@ -211,6 +218,7 @@
             border-radius: 12px;
             font-size: 0.8rem;
             text-align: center;
+            margin: 0 2px;
         }
         .status-paid {
             background-color: #2ecc71;
@@ -240,6 +248,24 @@
         }
         .view-btn {
             color: #2ecc71;
+        }
+
+        .payment-toggle {
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .payment-toggle.paid {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .payment-toggle.unpaid {
+            background-color: #e74c3c;
+            color: white;
         }
 
         /* Mobile responsive */
@@ -273,14 +299,12 @@
 </head>
 <body>
     <button class="hamburger-menu" id="menuToggle">☰</button>
-
     <div class="sidebar" id="sidebar">
         <div class="logo">
-            <div class="logo-icon">🏢</div>
-            <h2>Landlord Manager</h2>
+            <h2>Landlord App</h2>
         </div>
         <nav class="nav-menu">
-            <a href="/" class="menu-item">
+<a href="/" class="menu-item">
                 <i>📊</i> Dashboard
             </a>
             <a href="/view-properties.html" class="menu-item active">
@@ -306,145 +330,177 @@
             </a>
         </nav>
     </div>
-
     <div class="main-content">
-        <h1 class="page-title" id="propertyTitle">Edit Property</h1>
+        <div class="property-form-container">
+            <h1 class="page-title" id="propertyTitle">Edit Property</h1>
+            <div class="data-container">
+                <form id="editPropertyForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" name="address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State</label>
+                            <input type="text" id="state" name="state" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zip">Zip Code</label>
+                            <input type="text" id="zip" name="zip" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="type">Property Type</label>
+                            <select id="type" name="type">
+                                <option value="Single Family">Single Family</option>
+                                <option value="Multi Family">Multi Family</option>
+                                <option value="Condo">Condo</option>
+                                <option value="Apartment">Apartment</option>
+                                <option value="Commercial">Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bedrooms">Bedrooms</label>
+                            <input type="number" id="bedrooms" name="bedrooms" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="bathrooms">Bathrooms</label>
+                            <input type="number" id="bathrooms" name="bathrooms" min="0" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="rent">Monthly Rent ($)</label>
+                            <input type="number" id="rent" name="rent" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="sqft">Square Feet</label>
+                            <input type="number" id="sqft" name="sqft" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="purchase_price">Purchase Price ($)</label>
+                            <input type="number" id="purchase_price" name="purchase_price" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="purchase_date">Purchase Date</label>
+                            <input type="date" id="purchase_date" name="purchase_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="monthly_mortgage">Monthly Mortgage Payment ($)</label>
+                            <input type="number" id="monthly_mortgage" name="monthly_mortgage" step="0.01" min="0">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-properties.html'">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-        <div class="property-stats">
-            <div class="stat-card">
-                <div class="stat-label">Total Tenants</div>
-                <div class="stat-value" id="tenantCount">0</div>
+        <div class="data-grids-container">
+            <div class="property-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Tenants</div>
+                    <div class="stat-value" id="tenantCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Monthly Income</div>
+                    <div class="stat-value" id="monthlyIncome">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Property Value</div>
+                    <div class="stat-value" id="propertyValue">$0</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Monthly Income</div>
-                <div class="stat-value" id="monthlyIncome">$0</div>
+            <div class="table-actions" style="grid-column: 1 / -1; text-align: right; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="recordMonthlyRent()">Record Monthly Rent Payment</button>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Property Value</div>
-                <div class="stat-value" id="propertyValue">$0</div>
+            <h2 class="page-title" style="margin-top: 30px;">Property Tenants</h2>
+            <div class="data-container">
+                <div class="table-container">
+                    <table id="tenantsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Property</th>
+                                <th>Monthly Rent</th>
+                                <th>Current Month</th>
+                                <th>Last Payment</th>
+                                <th>Payment History</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tenantsList">
+                            <tr>
+                                <td colspan="7" style="text-align: center;">Loading tenants...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-actions" style="margin-top: 15px; text-align: right;">
+                    <button class="btn btn-primary" onclick="addTenant(propertyId)">+ Add Tenant</button>
+                </div>
             </div>
-        </div>
 
-        <div class="data-container">
-            <form id="editPropertyForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="address">Address</label>
-                        <input type="text" id="address" name="address" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="city">City</label>
-                        <input type="text" id="city" name="city" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="state">State</label>
-                        <input type="text" id="state" name="state" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="zip">Zip Code</label>
-                        <input type="text" id="zip" name="zip" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="type">Property Type</label>
-                        <select id="type" name="type">
-                            <option value="Single Family">Single Family</option>
-                            <option value="Multi Family">Multi Family</option>
-                            <option value="Condo">Condo</option>
-                            <option value="Apartment">Apartment</option>
-                            <option value="Commercial">Commercial</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="bedrooms">Bedrooms</label>
-                        <input type="number" id="bedrooms" name="bedrooms" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="bathrooms">Bathrooms</label>
-                        <input type="number" id="bathrooms" name="bathrooms" min="0" step="0.5">
-                    </div>
-                    <div class="form-group">
-                        <label for="rent">Monthly Rent ($)</label>
-                        <input type="number" id="rent" name="rent" step="0.01" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="sqft">Square Feet</label>
-                        <input type="number" id="sqft" name="sqft" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="purchase_price">Purchase Price ($)</label>
-                        <input type="number" id="purchase_price" name="purchase_price" step="0.01" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="purchase_date">Purchase Date</label>
-                        <input type="date" id="purchase_date" name="purchase_date">
-                    </div>
-                    <div class="form-group">
-                        <label for="monthly_mortgage">Monthly Mortgage Payment ($)</label>
-                        <input type="number" id="monthly_mortgage" name="monthly_mortgage" step="0.01" min="0">
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" name="notes"></textarea>
-                    </div>
+            <h2 class="page-title" style="margin-top: 30px;">Property Payments</h2>
+            <div class="data-container">
+                <div class="table-container">
+                    <table id="paymentsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Tenant</th>
+                                <th>Amount</th>
+                                <th>Type</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsList">
+                            <tr>
+                                <td colspan="7" style="text-align: center;">Loading payments...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/view-properties.html'">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="table-actions" style="margin-top: 15px; text-align: right;">
+                    <button class="btn btn-primary" onclick="addPayment(propertyId)">+ Add Payment</button>
                 </div>
-            </form>
-        </div>
-        
-        <h2 class="page-title" style="margin-top: 30px;">Property Tenants</h2>
-        <div class="data-container">
-            <div class="table-container">
-                <table id="tenantsTable">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Unit</th>
-                            <th>Lease Start</th>
-                            <th>Lease End</th>
-                            <th>Monthly Rent</th>
-                            <th>Payment Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tenantsList">
-                        <tr>
-                            <td colspan="7" style="text-align: center;">Loading tenants...</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
-            <div class="table-actions" style="margin-top: 15px; text-align: right;">
-                <button class="btn btn-primary" onclick="addTenant(propertyId)">+ Add Tenant</button>
-            </div>
-        </div>
-        
-        <h2 class="page-title" style="margin-top: 30px;">Property Payments</h2>
-        <div class="data-container">
-            <div class="table-container">
-                <table id="paymentsTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Tenant</th>
-                            <th>Amount</th>
-                            <th>Type</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paymentsList">
-                        <tr>
-                            <td colspan="7" style="text-align: center;">Loading payments...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="table-actions" style="margin-top: 15px; text-align: right;">
-                <button class="btn btn-primary" onclick="addPayment(propertyId)">+ Add Payment</button>
+
+            <h2 class="page-title" style="margin-top: 30px;">Property Bills</h2>
+            <div class="data-container">
+                <div class="table-container">
+                    <table id="billsTable">
+                        <thead>
+                            <tr>
+                                <th>Bill Type</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Payment Date</th>
+                                <th>Period</th>
+                                <th>Recurring</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billsList">
+                            <tr>
+                                <td colspan="8" style="text-align: center;">Loading bills...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-actions" style="margin-top: 15px; text-align: right;">
+                    <button class="btn btn-primary" onclick="addBill(propertyId)">+ Add Bill</button>
+                </div>
             </div>
         </div>
     </div>
@@ -467,7 +523,7 @@
         // Get property ID from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const propertyId = urlParams.get('id');
-        
+
         // Load property data
         async function loadProperty() {
             try {
@@ -475,7 +531,6 @@
                 if (!response.ok) {
                     throw new Error('Failed to fetch property');
                 }
-                
                 const property = await response.json();
                 document.getElementById('propertyTitle').textContent = `Edit Property: ${property.address}`;
                 
@@ -501,25 +556,16 @@
                 }
                 
                 document.getElementById('notes').value = property.notes || '';
-                
-                // Update the loadProperty function to include mortgage fields
-               
                 document.getElementById('monthly_mortgage').value = property.monthly_mortgage || '';
-                
-                // Load property stats
                 document.getElementById('propertyValue').textContent = `$${property.purchase_price || 0}`;
-                
-                // Load tenant count
                 loadTenantCount();
-                
-                // Load income
                 loadPropertyIncome();
             } catch (error) {
                 console.error('Error loading property:', error);
                 alert('Error loading property. Please try again.');
             }
         }
-        
+
         // Load tenant count for this property
         async function loadTenantCount() {
             try {
@@ -561,7 +607,7 @@
                 console.error('Error loading property income:', error);
             }
         }
-        
+
         // Handle form submission
         document.getElementById('editPropertyForm').addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -603,59 +649,111 @@
                 alert('Error updating property. Please try again.');
             }
         });
-        
+
         // Load property when page loads
         document.addEventListener('DOMContentLoaded', () => {
             loadProperty();
             loadPropertyTenants();
             loadPropertyPayments();
+            loadPropertyBills();  // Add this line
         });
         
         // Load tenants for this property
         async function loadPropertyTenants() {
             try {
                 const response = await fetch(`/api/properties/${propertyId}/tenants`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch tenants');
-                }
-                
+                if (!response.ok) throw new Error('Failed to fetch tenants');
+
                 const tenants = await response.json();
                 const tableBody = document.getElementById('tenantsList');
                 
                 if (tenants.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tenants found for this property</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tenants found</td></tr>';
                     return;
                 }
+
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1;
+                const currentYear = currentDate.getFullYear();
                 
-                tableBody.innerHTML = '';
-                tenants.forEach(tenant => {
-                    // Format dates
-                    const leaseStart = tenant.lease_start ? new Date(tenant.lease_start).toLocaleDateString() : 'N/A';
-                    const leaseEnd = tenant.lease_end ? new Date(tenant.lease_end).toLocaleDateString() : 'N/A';
-                    const paymentStatus = tenant.paymentStatus || 'Not Paid';
-                    const statusClass = paymentStatus === 'Paid' ? 'status-paid' : 'status-unpaid';
+                tableBody.innerHTML = tenants.map(tenant => {
+                    const lastPaymentDate = tenant.lastPaymentDate ? new Date(tenant.lastPaymentDate).toLocaleDateString() : 'Never';
+                    const isPaidThisMonth = tenant.lastPaymentMonth === currentMonth && 
+                                          tenant.lastPaymentYear === currentYear;
                     
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${tenant.name}</td>
-                        <td>${tenant.unit_number}</td>
-                        <td>${leaseStart}</td>
-                        <td>${leaseEnd}</td>
-                        <td>$${tenant.monthly_rent || 0}</td>
-                        <td><span class="status-badge ${statusClass}">${paymentStatus}</span></td>
-                        <td class="actions">
-                            <button class="edit-btn" onclick="editTenant('${tenant._id}')">✏️</button>
-                            <button class="delete-btn" onclick="deleteTenant('${tenant._id}')">🗑️</button>
-                            <button class="view-btn" onclick="viewTenantPayments('${tenant._id}')">💵</button>
-                        </td>
+                    return `
+                        <tr>
+                            <td>${tenant.name}</td>
+                            <td>${tenant.unit_number || 'N/A'}</td>
+                            <td>$${tenant.monthly_rent || 0}</td>
+                            <td>
+                                <button 
+                                    class="payment-toggle ${isPaidThisMonth ? 'paid' : 'unpaid'}"
+                                    onclick="togglePaymentStatus('${tenant._id}', ${!isPaidThisMonth})"
+                                >
+                                    ${isPaidThisMonth ? 'Paid' : 'Not Paid'}
+                                </button>
+                            </td>
+                            <td>${lastPaymentDate}</td>
+                            <td>${formatPaymentHistory(tenant.paymentHistory)}</td>
+                            <td class="actions">
+                                <button onclick="editTenant('${tenant._id}')">✏️</button>
+                                <button onclick="deleteTenant('${tenant._id}')">🗑️</button>
+                                <button onclick="viewPayments('${tenant._id}')">💰</button>
+                            </td>
+                        </tr>
                     `;
-                    tableBody.appendChild(row);
-                });
+                }).join('');
             } catch (error) {
-                console.error('Error loading property tenants:', error);
-                document.getElementById('tenantsList').innerHTML = 
-                    '<tr><td colspan="7" style="text-align: center;">Error loading tenants</td></tr>';
+                console.error('Error loading tenants:', error);
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Error loading tenants</td></tr>';
             }
+        }
+
+        // Add this new function for recording monthly rent
+        async function recordMonthlyRent() {
+            try {
+                const property = await (await fetch(`/api/properties/${propertyId}`)).json();
+                const tenants = await (await fetch(`/api/properties/${propertyId}/tenants`)).json();
+                
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1;
+                const currentYear = currentDate.getFullYear();
+
+                for (const tenant of tenants) {
+                    await fetch(`/api/tenants/${tenant._id}/payment-status`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            hasPaid: true,
+                            paymentMonth: currentMonth,
+                            paymentYear: currentYear
+                        })
+                    });
+                }
+
+                // Refresh the display
+                loadPropertyTenants();
+                loadPropertyIncome();
+                alert('Monthly rent recorded successfully for all tenants');
+            } catch (error) {
+                console.error('Error recording monthly rent:', error);
+                alert('Error recording monthly rent');
+            }
+        }
+
+        // Add the payment history formatter
+        function formatPaymentHistory(history) {
+            if (!history || !history.length) return 'No history';
+            const lastThreeMonths = history.slice(-3);
+            return lastThreeMonths.map(payment => {
+                const date = new Date(payment.date);
+                return `<span class="status-badge status-${payment.status}">
+                    ${date.toLocaleDateString('default', { month: 'short' })}
+                </span>`;
+            }).join(' ');
         }
         
         // Load payments for this property
@@ -698,21 +796,114 @@
                 });
             } catch (error) {
                 console.error('Error loading property payments:', error);
-                document.getElementById('paymentsList').innerHTML = 
-                    '<tr><td colspan="7" style="text-align: center;">Error loading payments</td></tr>';
+                document.getElementById('paymentsList').innerHTML = '<tr><td colspan="7" style="text-align: center;">Error loading payments</td></tr>';
             }
         }
-        
+
+        // Add bills loading function
+        async function loadPropertyBills() {
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/bills`);
+                if (!response.ok) throw new Error('Failed to fetch bills');
+
+                const bills = await response.json();
+                const tableBody = document.getElementById('billsList');
+                
+                if (bills.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No bills found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = bills.map(bill => {
+                    const dueDate = new Date(bill.due_date).toLocaleDateString();
+                    const paymentDate = bill.payment_date ? new Date(bill.payment_date).toLocaleDateString() : '-';
+                    const period = bill.bill_period_start && bill.bill_period_end ? 
+                        `${new Date(bill.bill_period_start).toLocaleDateString()} - ${new Date(bill.bill_period_end).toLocaleDateString()}` : 
+                        '-';
+                    
+                    return `
+                        <tr>
+                            <td>${bill.bill_type}</td>
+                            <td>$${bill.amount.toFixed(2)}</td>
+                            <td>${dueDate}</td>
+                            <td>
+                                <span class="status-badge ${bill.paid ? 'status-paid' : 'status-unpaid'}">
+                                    ${bill.paid ? 'Paid' : 'Unpaid'}
+                                </span>
+                            </td>
+                            <td>${paymentDate}</td>
+                            <td>${period}</td>
+                            <td>${bill.recurring_monthly ? '🔄 Monthly' : '-'}</td>
+                            <td class="actions">
+                                <button onclick="editBill('${bill._id}')">✏️</button>
+                                <button onclick="deleteBill('${bill._id}')">🗑️</button>
+                                ${!bill.paid ? `<button onclick="markAsPaid('${bill._id}')">✅ Paid</button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading bills:', error);
+                document.getElementById('billsList').innerHTML = 
+                    '<tr><td colspan="8" style="text-align: center;">Error loading bills</td></tr>';
+            }
+        }
+
+        // Add mark as paid function
+        async function markAsPaid(billId) {
+            if (!confirm('Are you sure you want to mark this bill as paid?')) return;
+
+            try {
+                const response = await fetch(`/api/bills/${billId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ paid: true })
+                });
+
+                if (!response.ok) throw new Error('Failed to mark bill as paid');
+                
+                // Reload bills to reflect the updated status
+                loadPropertyBills();
+            } catch (error) {
+                console.error('Error marking bill as paid:', error);
+                alert('Error marking bill as paid');
+            }
+        }
+
+        // Add bill action functions
+        function editBill(id) {
+            window.location.href = `/edit-bill.html?id=${id}`;
+        }
+
+        function deleteBill(id) {
+            if (!confirm('Are you sure you want to delete this bill?')) return;
+            
+            fetch(`/api/bills/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to delete bill');
+                    loadPropertyBills();
+                })
+                .catch(error => {
+                    console.error('Error deleting bill:', error);
+                    alert('Error deleting bill');
+                });
+        }
+
+        function addBill(propertyId) {
+            window.location.href = `/add-bill.html?property_id=${propertyId}`;
+        }
+
         // Action functions for tenants
         function editTenant(id) {
             window.location.href = `/edit-tenant.html?id=${id}`;
         }
-        
+
         function deleteTenant(id) {
             if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
                 return;
             }
-            
             fetch(`/api/tenants/${id}`, {
                 method: 'DELETE'
             })
@@ -728,11 +919,7 @@
                 alert('Error deleting tenant');
             });
         }
-        
-        function viewTenantPayments(id) {
-            window.location.href = `/view-payments.html?tenant_id=${id}`;
-        }
-        
+
         function addTenant(propertyId) {
             window.location.href = `/add-tenant.html?property_id=${propertyId}`;
         }
@@ -746,7 +933,6 @@
             if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
                 return;
             }
-            
             fetch(`/api/payments/${id}`, {
                 method: 'DELETE'
             })
@@ -759,7 +945,7 @@
             })
             .catch(error => {
                 console.error('Error deleting payment:', error);
-                alert('Error deleting payment');
+                alert('Error deleting payment. Please try again.');
             });
         }
         

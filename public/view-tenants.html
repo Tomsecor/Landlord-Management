@@ -465,7 +465,21 @@
 
                 async function togglePaymentStatus(tenantId, newStatus) {
                     try {
+                        const button = document.querySelector(`button[data-tenant-id="${tenantId}"]`);
                         const currentDate = new Date();
+                        let month = currentDate.getMonth() + 1;
+                        let year = currentDate.getFullYear();
+
+                        // If marking as paid, and was already paid this month, advance to next month
+                        if (newStatus && button.dataset.currentStatus === 'true') {
+                            if (month === 12) {
+                                month = 1;
+                                year++;
+                            } else {
+                                month++;
+                            }
+                        }
+
                         const response = await fetch(`/api/tenants/${tenantId}/payment-status`, {
                             method: 'PUT',
                             headers: {
@@ -473,15 +487,21 @@
                             },
                             body: JSON.stringify({
                                 hasPaid: newStatus,
-                                paymentMonth: currentDate.getMonth() + 1,
-                                paymentYear: currentDate.getFullYear()
+                                paymentMonth: month,
+                                paymentYear: year
                             })
                         });
 
                         if (!response.ok) throw new Error('Failed to update payment status');
                         
-                        // Reload tenants to show updated status
-                        loadTenants();
+                        // Update button state immediately
+                        const monthDisplay = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+                        button.className = `payment-toggle ${newStatus ? 'paid' : 'unpaid'}`;
+                        button.textContent = `${newStatus ? 'Paid' : 'Not Paid'} - ${monthDisplay}`;
+                        button.dataset.currentStatus = newStatus;
+
+                        // Reload tenants to update all information
+                        await loadTenants();
                     } catch (error) {
                         console.error('Error updating payment status:', error);
                         alert('Error updating payment status');
@@ -532,13 +552,15 @@
                 function displayTenants(tenants) {
                     const tbody = document.getElementById('tenantsTableBody');
                     const currentDate = new Date();
-                    const currentMonth = currentDate.getMonth() + 1;
+                    const currentMonth = currentDate.getMonth();
                     const currentYear = currentDate.getFullYear();
 
                     tbody.innerHTML = tenants.map(tenant => {
-                        const lastPaymentDate = tenant.lastPaymentDate ? new Date(tenant.lastPaymentDate) : null;
-                        const isPaidThisMonth = tenant.lastPaymentMonth === currentMonth && 
-                                               tenant.lastPaymentYear === currentYear;
+                        const isPaidThisMonth = tenant.lastPaymentStatus && 
+                                              tenant.lastPaymentMonth === currentMonth + 1 && 
+                                              tenant.lastPaymentYear === currentYear;
+                        
+                        const monthDisplay = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
                         
                         return `
                             <tr>
@@ -549,15 +571,18 @@
                                     <button 
                                         class="payment-toggle ${isPaidThisMonth ? 'paid' : 'unpaid'}"
                                         onclick="togglePaymentStatus('${tenant._id}', ${!isPaidThisMonth})"
+                                        data-tenant-id="${tenant._id}"
+                                        data-current-status="${isPaidThisMonth}"
                                     >
-                                        ${isPaidThisMonth ? 'Paid' : 'Not Paid'}
+                                        ${isPaidThisMonth ? 'Paid' : 'Not Paid'} - ${monthDisplay}
                                     </button>
                                 </td>
-                                <td>${lastPaymentDate ? lastPaymentDate.toLocaleDateString() : 'Never'}</td>
+                                <td>${tenant.lastPaymentDate ? new Date(tenant.lastPaymentDate).toLocaleDateString() : 'Never'}</td>
+                                <td>${formatPaymentHistory(tenant.paymentHistory)}</td>
                                 <td class="actions">
                                     <button onclick="editTenant('${tenant._id}')">✏️</button>
                                     <button onclick="deleteTenant('${tenant._id}')">🗑️</button>
-                                    <button onclick="viewPaymentHistory('${tenant._id}')">💰</button>
+                                    <button onclick="viewPayments('${tenant._id}')">💰</button>
                                 </td>
                             </tr>
                         `;
