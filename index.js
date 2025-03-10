@@ -45,25 +45,33 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Update session middleware (remove debug logging)
+// Update session middleware
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
-        dbName: 'your_db_name',
+        dbName: process.env.MONGO_DB_NAME || 'your_db_name',
         collectionName: 'sessions',
         ttl: 24 * 60 * 60,
-        autoRemove: 'native'
+        autoRemove: 'native',
+        stringify: false // Add this to prevent session serialization issues
     }),
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production', // Only set to true if using HTTPS
         httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000
-    }
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Important for cross-site cookies
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Add this for Render
+    },
+    proxy: process.env.NODE_ENV === 'production' // Add this for proper cookie handling behind proxy
 }));
+
+// Add this right after the session middleware
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1); // trust first proxy
+}
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
