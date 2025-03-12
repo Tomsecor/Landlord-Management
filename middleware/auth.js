@@ -2,11 +2,26 @@ const bcrypt = require('bcryptjs');
 const { getDb } = require('../db');
 
 // Authentication middleware
-async function requireAuth(req, res, next) {
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+function requireAuth(req, res, next) {
+    // Public paths that don't need authentication
+    const publicPaths = ['/login.html', '/register.html', '/styles', '/css', '/js'];
+    const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
+    
+    if (isPublicPath || req.path === '/') {
+        return next();
     }
-    next();
+
+    if (req.session && req.session.userId) {
+        return next();
+    }
+    
+    // Handle API requests
+    if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
+    }
+    
+    // Redirect any other requests to login
+    res.redirect('/login.html');
 }
 
 // Login handler

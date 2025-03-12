@@ -15,6 +15,12 @@
             display: flex;
             min-height: 100vh;
         }
+        .edit-btn {
+            color: #3498db;
+        }
+        .delete-btn {
+            color: #e74c3c;
+        }
         .sidebar {
             width: 250px;
             background-color: #2c3e50;
@@ -70,80 +76,75 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             padding: 20px;
+            overflow: hidden;
             margin-bottom: 30px;
         }
         .toolbar {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
-            flex-wrap: wrap;
+            align-items: center;
         }
         .search-bar {
             display: flex;
-            align-items: center;
+            background: #f8f9fa;
+            border-radius: 5px;
+            overflow: hidden;
+            max-width: 300px;
         }
         .search-bar input {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            margin-right: 10px;
-        }
-        .search-bar button, .action-btn {
-            background-color: #3498db;
-            color: white;
             border: none;
+            padding: 10px;
+            flex-grow: 1;
+            background: transparent;
+        }
+        .search-bar button {
+            border: none;
+            background: #3498db;
+            color: white;
             padding: 10px 15px;
-            border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
         }
-        .action-btn.secondary {
-            background-color: #7f8c8d;
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
         }
-        .action-btn.warning {
-            background-color: #e74c3c;
-        }
-        .grid-table {
+        table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 0;
         }
-        .grid-table th, .grid-table td {
+        th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
         }
-        .grid-table th {
+        th {
             background-color: #f8f9fa;
             font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
         }
-        .grid-table tr:hover {
-            background-color: #f1f2f6;
+        .payment-toggle {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border-radius: 12px;
+            font-size: 0.85rem;
         }
         .actions {
+            white-space: nowrap;
             display: flex;
             gap: 8px;
         }
         .actions button {
-            border: none;
-            background: none;
-            cursor: pointer;
-            padding: 5px;
-            font-size: 1rem;
-            transition: color 0.3s;
-        }
-        .edit-btn {
-            color: #3498db;
-        }
-        .delete-btn {
-            color: #e74c3c;
-        }
-        .view-payments-btn {
-            color: #2ecc71;
-        }
-        .add-payment-btn {
-            color: #f39c12;
+            padding: 6px;
+            font-size: 1.1rem;
         }
         .pagination {
             display: flex;
@@ -307,6 +308,9 @@
             <a href="#" class="menu-item">
                 <i>⚙️</i> Settings
             </a>
+            <a href="#" class="menu-item" id="logoutBtn" style="margin-top: auto; color: #e74c3c;">
+                <i>🚪</i> Logout
+            </a>
         </nav>
     </div>
     
@@ -322,7 +326,7 @@
                     <button id="searchBtn">Search</button>
                 </div>
                 <div class="action-buttons">
-                    <a href="/add-tenant.html" class="action-btn">+ Add Tenant</a>
+                    <button class="action-btn" onclick="window.location.href='/add-tenant.html'">+ Add Tenant</button>
                     <button class="action-btn secondary" id="exportBtn">Export</button>
                 </div>
             </div>
@@ -342,7 +346,11 @@
                     </thead>
                     <tbody id="tenantsTableBody">
                         <!-- Tenants will be loaded here -->
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Loading tenants...</td>
+                        </tr>
                     </tbody>
+                    
                 </table>
             </div>
         </div>
@@ -395,6 +403,24 @@
                             searchTenants();
                         }
                     });
+
+                    // Enhanced search functionality
+                    const searchInput = document.getElementById('searchInput');
+                    
+                    // Add debounce to search while typing
+                    let searchTimeout;
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(searchTenants, 300);
+                    });
+
+                    // Keep existing click and enter key handlers
+                    document.getElementById('searchBtn').addEventListener('click', searchTenants);
+                    searchInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            searchTenants();
+                        }
+                    });
                 });
 
                 async function loadTenants(propertyId) {
@@ -433,9 +459,9 @@
                                     <td>${lastPaymentDate ? lastPaymentDate.toLocaleDateString() : 'Never'}</td>
                                     <td>${formatPaymentHistory(tenant.paymentHistory)}</td>
                                     <td class="actions">
-                                        <button onclick="editTenant('${tenant._id}')">✏️</button>
-                                        <button onclick="deleteTenant('${tenant._id}')">🗑️</button>
-                                        <button onclick="viewPayments('${tenant._id}')">💰</button>
+                                        <button class="edit-btn"  onclick="editTenant('${tenant._id}')">✏️</button>
+                                        <button class="delete-btn" onclick="deleteTenant('${tenant._id}')">🗑️</button>
+                                        <button class="view-payments-btn" onclick="viewPayments('${tenant._id}')">💰</button>
                                     </td>
                                 </tr>
                             `;
@@ -546,7 +572,41 @@
 
                 // Search function (Placeholder.  Needs to be updated to actually search)
                 function searchTenants() {
-                    alert('Search functionality will be implemented soon!');
+                    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+                    const rows = document.querySelectorAll('#tenantsTableBody tr');
+
+                    rows.forEach(row => {
+                        let found = false;
+                        // Skip the loading row or empty table message
+                        if (row.cells.length <= 1) return;
+
+                        // Search through each cell in the row
+                        Array.from(row.cells).forEach(cell => {
+                            // Skip cells with buttons (like actions and payment toggle)
+                            if (!cell.querySelector('button')) {
+                                const text = cell.textContent.toLowerCase();
+                                if (text.includes(searchInput)) {
+                                    found = true;
+                                }
+                            }
+                        });
+
+                        // Show/hide row based on search result
+                        row.style.display = found ? '' : 'none';
+                    });
+
+                    // Update pagination info
+                    updatePaginationInfo();
+                }
+
+                // Add function to update pagination info
+                function updatePaginationInfo() {
+                    const visibleRows = document.querySelectorAll('#tenantsTableBody tr:not([style*="display: none"])');
+                    const total = visibleRows.length;
+                    
+                    document.getElementById('startRange').textContent = total > 0 ? '1' : '0';
+                    document.getElementById('endRange').textContent = total;
+                    document.getElementById('totalCount').textContent = total;
                 }
 
                 function displayTenants(tenants) {

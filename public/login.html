@@ -113,6 +113,16 @@
     </div>
 
     <script>
+        // Add this at the beginning of your script
+        // Check if user is already logged in
+        fetch('/api/auth/check-session')
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => console.error('Session check error:', error));
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             

@@ -3,6 +3,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const { connectToDb } = require('./db');
 require('dotenv').config();
+const path = require('path');
 
 // Initialize express
 const app = express();
@@ -26,6 +27,15 @@ app.use(session({
     })
 }));
 
+// Serve static files for login and register without auth
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const billRoutes = require('./routes/bills');
@@ -36,6 +46,17 @@ const statisticsRoutes = require('./routes/statistics');
 const tenantRoutes = require('./routes/tenants');
 const todoRoutes = require('./routes/todos');
 
+// Import auth middleware
+const { requireAuth } = require('./middleware/auth');
+
+// Apply auth middleware to all routes except login and register
+app.use((req, res, next) => {
+    if (req.path === '/login.html' || req.path === '/register.html' || req.path === '/api/auth/login' || req.path === '/api/auth/register') {
+        return next();
+    }
+    requireAuth(req, res, next);
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bills', billRoutes);
@@ -45,6 +66,15 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/statistics', statisticsRoutes);
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/todos', todoRoutes);
+
+// Error handler for API routes
+app.use('/api', (err, req, res, next) => {
+    if (err.name === 'UnauthorizedError') {
+        res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
+    } else {
+        next(err);
+    }
+});
 
 // Error handler
 app.use((err, req, res, next) => {

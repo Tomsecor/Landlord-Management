@@ -149,7 +149,7 @@
             background: none;
             cursor: pointer;
             padding: 5px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             transition: color 0.3s;
         }
         .edit-btn {
@@ -157,6 +157,20 @@
         }
         .delete-btn {
             color: #e74c3c;
+        }
+        .action-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .action-btn.secondary {
+            background-color: #95a5a6;
         }
         .hamburger-menu {
             display: none;
@@ -264,6 +278,9 @@
             </a>
             <a href="#" class="menu-item">
                 <i>⚙️</i> Settings
+            </a>
+            <a href="#" class="menu-item" id="logoutBtn" style="margin-top: auto; color: #e74c3c;">
+                <i>🚪</i> Logout
             </a>
         </nav>
     </div>
@@ -391,9 +408,9 @@
                                 ${entry.tax_deductible ? 'Deductible' : 'Non-deductible'}
                             </span>
                         </td>
-                        <td class="action-cell">
-                            <button class="action-btn small" onclick="editMileage('${entry._id}')">Edit</button>
-                            <button class="action-btn small warning" onclick="deleteMileage('${entry._id}')">Delete</button>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editMileage('${entry._id}')">✏️</button>
+                            <button class="delete-btn" onclick="deleteMileage('${entry._id}')">🗑️</button>
                         </td>
                     </tr>
                 `).join('');

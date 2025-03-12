@@ -235,6 +235,41 @@
                 justify-content: space-between;
             }
         }
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .actions button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+        }
+        .edit-btn {
+            color: #3498db;
+        }
+        .delete-btn {
+            color: #e74c3c;
+        }
+        .view-btn {
+            color: #2ecc71;
+        }
+        .action-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .action-btn.secondary {
+            background-color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -269,6 +304,9 @@
             </a>
             <a href="#" class="menu-item">
                 <i>⚙️</i> Settings
+            </a>
+            <a href="#" class="menu-item" id="logoutBtn" style="margin-top: auto; color: #e74c3c;">
+                <i>🚪</i> Logout
             </a>
         </nav>
     </div>
@@ -415,9 +453,10 @@
                         <td>${paymentDate}</td>
                         <td>$800.00</td>
                         <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn small" onclick="editPayment('${payment._id}')">Edit</button>
-                            <button class="action-btn small warning" onclick="deletePayment('${payment._id}')">Delete</button>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editPayment('${payment._id}')">✏️</button>
+                            <button class="delete-btn" onclick="deletePayment('${payment._id}')">🗑️</button>
+                            <button class="view-btn" onclick="viewPaymentDetails('${payment._id}')">👁️</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
