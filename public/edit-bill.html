@@ -385,8 +385,12 @@
 
         async function loadBillData() {
             try {
+                // Load properties first
                 await loadProperties();
 
+               
+
+                // Load bill data if editing
                 if (!billId) {
                     document.getElementById('billTitle').textContent = 'Add New Bill';
                     return;
@@ -416,7 +420,7 @@
                 });
             } catch (error) {
                 console.error('Error loading bill:', error);
-                alert('Error loading bill data');
+                alert('Error loading bill data: ' + error.message);
             }
         }
 
@@ -479,7 +483,18 @@
                 }
                 
                 alert(billId ? 'Bill updated successfully' : 'Bill added successfully');
-                window.location.href = '/view-bills.html';
+                
+                // Check for returnUrl parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnUrl = urlParams.get('returnUrl');
+                
+                if (returnUrl && returnUrl.includes('edit-property.html')) {
+                    // Extract property ID from return URL if it exists
+                    const propertyId = new URLSearchParams(returnUrl.split('?')[1]).get('id');
+                    window.location.href = `/edit-property.html?id=${propertyId}`;
+                } else {
+                    window.location.href = '/view-bills.html';
+                }
             } catch (error) {
                 console.error('Error saving bill:', error);
                 alert('Error saving bill. Please try again.');

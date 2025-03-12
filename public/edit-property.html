@@ -747,15 +747,80 @@
         // Add the payment history formatter
         function formatPaymentHistory(history) {
             if (!history || !history.length) return 'No history';
-            const lastThreeMonths = history.slice(-3);
-            return lastThreeMonths.map(payment => {
-                const date = new Date(payment.date);
-                return `<span class="status-badge status-${payment.status}">
-                    ${date.toLocaleDateString('default', { month: 'short' })}
-                </span>`;
-            }).join(' ');
+            
+            // Group by year
+            const byYear = history.reduce((acc, payment) => {
+                const year = payment.year;
+                if (!acc[year]) acc[year] = [];
+                acc[year].push(payment);
+                return acc;
+            }, {});
+
+            return Object.entries(byYear).map(([year, payments]) => {
+                const monthsHtml = payments.map(payment => {
+                    const amount = payment.amount?.toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    });
+                    const tooltip = `
+                        Amount: ${amount}
+                        Date: ${new Date(payment.date).toLocaleDateString()}
+                        Type: ${payment.payment_type}
+                        Method: ${payment.payment_method}
+                    `;
+                    
+                    return `
+                        <span 
+                            class="status-badge status-${payment.status}"
+                            title="${tooltip}"
+                            style="cursor: help;"
+                        >
+                            ${new Date(payment.date).toLocaleDateString('default', { month: 'short' })}
+                        </span>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="payment-year">
+                        <small>${year}:</small> ${monthsHtml}
+                    </div>
+                `;
+            }).join('');
         }
-        
+
+        // Add this CSS to the existing styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .payment-year {
+                margin-bottom: 5px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .payment-year small {
+                color: #666;
+                min-width: 40px;
+            }
+            .status-badge {
+                position: relative;
+            }
+            .status-badge:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: white;
+                padding: 5px;
+                border-radius: 4px;
+                font-size: 12px;
+                white-space: pre-line;
+                z-index: 1000;
+            }
+        `;
+        document.head.appendChild(style);
+
         // Load payments for this property
         async function loadPropertyPayments() {
             try {
@@ -849,34 +914,44 @@
             }
         }
 
-        // Add mark as paid function
+        // Update markAsPaid function
         async function markAsPaid(billId) {
             if (!confirm('Are you sure you want to mark this bill as paid?')) return;
 
             try {
+                const bill = await fetch(`/api/bills/${billId}`).then(r => r.json());
+                if (!bill) throw new Error('Bill not found');
+
                 const response = await fetch(`/api/bills/${billId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ paid: true })
+                    body: JSON.stringify({
+                        ...bill,
+                        paid: true,
+                        payment_date: new Date().toISOString()
+                    })
                 });
 
-                if (!response.ok) throw new Error('Failed to mark bill as paid');
+                if (!response.ok) throw new Error('Failed to update bill');
                 
                 // Reload bills to reflect the updated status
                 loadPropertyBills();
+                
             } catch (error) {
                 console.error('Error marking bill as paid:', error);
-                alert('Error marking bill as paid');
+                alert('Error marking bill as paid: ' + error.message);
             }
         }
 
         // Add bill action functions
         function editBill(id) {
-            window.location.href = `/edit-bill.html?id=${id}`;
+            const currentUrl = `${window.location.pathname}${window.location.search}`;
+            window.location.href = `/edit-bill.html?id=${id}&returnUrl=${encodeURIComponent(currentUrl)}`;
         }
 
+        
         function deleteBill(id) {
             if (!confirm('Are you sure you want to delete this bill?')) return;
             

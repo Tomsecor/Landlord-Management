@@ -245,7 +245,7 @@
     </div>
 
     <div class="main-content">
-        <h1 class="page-title">Edit Todo</h1>
+        <h1 class="page-title" id="pageTitle">Edit Todo</h1>
 
         <div class="form-container">
             <form id="editTodoForm">
@@ -287,7 +287,9 @@
 
                     <div class="form-group">
                         <label for="assigned_to">Assigned To</label>
-                        <input type="text" id="assigned_to" name="assigned_to">
+                        <select id="assigned_to" name="assigned_to" required>
+                            <option value="">Select a user</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -310,86 +312,125 @@
     </div>
 
     <script>
-        
-
-        // Load todo data
         const urlParams = new URLSearchParams(window.location.search);
         const todoId = urlParams.get('id');
-        document.addEventListener('DOMContentLoaded', loadTodoData);
 
-async function loadTodoData() {
-    try {
-        // Get the todo ID from the URL
-       
-        if (!todoId) {
-            alert('No todo ID provided');
-            window.location.href = '/view-todos.html';
-            return;
-        }
-        console.log('Todo ID:', todoId); // Debug: Check if ID is retrieved
-
-        // Fetch todo data and properties in parallel
-        const todoResponse = await fetch(`/api/todos/${todoId}`);
-        const propertiesResponse = await fetch('/api/properties');
-
-        // Check if API calls succeeded
-        if (!todoResponse.ok) {
-            throw new Error('Failed to fetch todo data');
-        }
-        if (!propertiesResponse.ok) {
-            throw new Error('Failed to fetch properties');
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/properties');
+                if (!response.ok) throw new Error('Failed to fetch properties');
+                
+                const properties = await response.json();
+                const selectElement = document.getElementById('Properties_id');
+                
+                selectElement.innerHTML = '<option value="">Select a property</option>';
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = property.address;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading properties:', error);
+                alert('Error loading properties');
+            }
         }
 
-        const todo = await todoResponse.json();
-        const properties = await propertiesResponse.json();
-
-        // Check if todo data exists
-        if (!todo) {
-            alert('Todo not found');
-            window.location.href = '/view-todos.html';
-            return;
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                if (!response.ok) throw new Error('Failed to fetch users');
+                
+                const users = await response.json();
+                const selectElement = document.getElementById('assigned_to');
+                
+                selectElement.innerHTML = '<option value="">Select a user</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user._id;
+                    option.textContent = user.email;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Error loading users');
+            }
         }
-        console.log('Todo data:', todo); // Debug: Inspect the fetched data
 
-        // Populate properties dropdown
-        const propertiesSelect = document.getElementById('Properties_id');
-        properties.forEach(property => {
-            const option = document.createElement('option');
-            option.value = property._id;
-            option.textContent = property.address; // Assuming 'address' is the display field
-            propertiesSelect.appendChild(option);
+        async function loadTodoData() {
+            try {
+                // Load properties and users
+                await Promise.all([loadProperties(), loadUsers()]);
+
+                if (!todoId) return;
+
+                const response = await fetch(`/api/todos/${todoId}`);
+                if (!response.ok) throw new Error('Failed to fetch todo');
+                
+                const todoData = await response.json();
+                
+                // Populate form fields
+                document.getElementById('title').value = todoData.title || '';
+                document.getElementById('Properties_id').value = todoData.Properties_id || '';
+                document.getElementById('priority').value = todoData.priority || 'medium';
+                document.getElementById('status').value = todoData.status || 'pending';
+                document.getElementById('assigned_to').value = todoData.assigned_to || '';
+                document.getElementById('estimated_cost').value = todoData.estimated_cost || '';
+                document.getElementById('description').value = todoData.description || '';
+                
+                if (todoData.due_date) {
+                    document.getElementById('due_date').value = new Date(todoData.due_date).toISOString().split('T')[0];
+                }
+            } catch (error) {
+                console.error('Error loading todo:', error);
+                alert('Error loading todo data');
+            }
+        }
+
+        // Update form submission handler
+        document.getElementById('editTodoForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            try {
+                const todoData = {
+                    title: document.getElementById('title').value,
+                    Properties_id: document.getElementById('Properties_id').value,
+                    due_date: document.getElementById('due_date').value,
+                    priority: document.getElementById('priority').value,
+                    status: document.getElementById('status').value,
+                    assigned_to: document.getElementById('assigned_to').value,
+                    estimated_cost: parseFloat(document.getElementById('estimated_cost').value) || 0,
+                    description: document.getElementById('description').value
+                };
+
+                const url = todoId ? `/api/todos/${todoId}` : '/api/todos';
+                const method = todoId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(todoData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save todo');
+                }
+                
+                alert(todoId ? 'Todo updated successfully' : 'Todo added successfully');
+                window.location.href = '/view-todos.html';
+            } catch (error) {
+                console.error('Error saving todo:', error);
+                alert('Error saving todo. Please try again.');
+            }
         });
 
-        // Populate form fields with todo data
-        document.getElementById('title').value = todo.title || '';
-        document.getElementById('Property_id').value = todo.Property_id || '';
-
-        // Handle due_date safely
-        const dueDate = todo.due_date ? new Date(todo.due_date) : null;
-        document.getElementById('due_date').value = 
-            dueDate && !isNaN(dueDate) ? dueDate.toISOString().split('T')[0] : '';
-
-        document.getElementById('priority').value = todo.priority || 'medium';
-        document.getElementById('status').value = todo.status || 'pending';
-        document.getElementById('assigned_to').value = todo.assigned_to || '';
-        document.getElementById('estimated_cost').value = todo.estimated_cost || 0;
-        document.getElementById('description').value = todo.description || '';
-
-        // Debug: Log values being set
-        console.log('Setting title to:', todo.title);
-        console.log('Setting Properties_id to:', todo.Properties_id);
-        console.log('Setting due_date to:', document.getElementById('due_date').value);
-
-    } catch (error) {
-        console.error('Error loading todo:', error);
-        alert('Error loading todo data');
-    }
-}
-
-        // Initialize
+        // Initialize page
         document.addEventListener('DOMContentLoaded', loadTodoData);
 
-        // Mobile menu toggle
+        // Mobile menu handler
         document.getElementById('menuToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
         });

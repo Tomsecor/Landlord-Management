@@ -345,18 +345,23 @@
         const urlParams = new URLSearchParams(window.location.search);
         const paymentId = urlParams.get('id');
 
-        // Load payment data
+        // Update loadPayment function
         async function loadPayment() {
             try {
-                const response = await fetch(`/api/payments/${paymentId}`);
+                const response = await fetch(`/api/payments/${paymentId}`, {
+                    credentials: 'include' // Add this for session support
+                });
                 if (!response.ok) {
                     throw new Error('Failed to fetch payment');
                 }
 
                 const payment = await response.json();
-                document.getElementById('paymentTitle').textContent = `Edit Payment for ${payment.tenant_name}`;
+                
+                // Update page title and form fields
+                document.getElementById('paymentTitle').textContent = 
+                    `Edit Payment for ${payment.tenant_name || 'Unknown Tenant'}`;
 
-                // Fill form with payment data
+                // Fill form fields
                 document.getElementById('tenant_name').value = payment.tenant_name || '';
                 document.getElementById('tenant_id').value = payment.tenant_id || '';
                 document.getElementById('property_id').value = payment.property_id || '';
@@ -366,23 +371,26 @@
                 document.getElementById('notes').value = payment.notes || '';
                 document.getElementById('paid').checked = payment.paid === true;
 
-                // Set payment date
+                // Update payment date
                 if (payment.payment_date) {
                     const date = new Date(payment.payment_date);
-                    const yyyy = date.getFullYear();
-                    const mm = String(date.getMonth() + 1).padStart(2, '0');
-                    const dd = String(date.getDate()).padStart(2, '0');
-                    document.getElementById('payment_date').value = `${yyyy}-${mm}-${dd}`;
+                    document.getElementById('payment_date').value = 
+                        date.toISOString().split('T')[0];
                 }
 
-                // Update stats displays
-                document.getElementById('paymentStatus').textContent = payment.paid ? 'Paid' : 'Not Paid';
-                document.getElementById('paymentStatus').style.color = payment.paid ? '#2ecc71' : '#e74c3c';
-                document.getElementById('paymentTypeDisplay').textContent = payment.payment_type || 'Rent';
-                document.getElementById('paymentMethodDisplay').textContent = payment.payment_method || 'Cash';
+                // Update stat cards with enhanced styling
+                const paymentStatus = document.getElementById('paymentStatus');
+                paymentStatus.textContent = payment.paid ? 'PAID' : 'PENDING';
+                paymentStatus.style.color = payment.paid ? '#2ecc71' : '#e74c3c';
+
+                document.getElementById('paymentTypeDisplay').textContent = 
+                    payment.payment_type || 'Not Set';
+                document.getElementById('paymentMethodDisplay').textContent = 
+                    payment.payment_method || 'Not Set';
+
             } catch (error) {
                 console.error('Error loading payment:', error);
-                alert('Error loading payment. Please try again.');
+                alert('Error loading payment details. Please try again.');
             }
         }
 

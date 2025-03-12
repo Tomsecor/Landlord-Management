@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -212,6 +211,50 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .payment-history {
+            margin-top: 20px;
+        }
+
+        .payment-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .payment-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .payment-entry.paid {
+            border-left-color: #2ecc71;
+        }
+
+        .payment-entry.unpaid {
+            border-left-color: #e74c3c;
+        }
+
+        .payment-amount {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .payment-date {
+            color: #7f8c8d;
+        }
+
+        .payment-method {
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #ecf0f1;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -315,6 +358,28 @@
                 </div>
             </form>
         </div>
+
+        <div class="data-container" style="margin-top: 20px;">
+            <h2>Payment History</h2>
+            <div class="payment-history">
+                <div class="payment-timeline" id="paymentTimeline">
+                    <!-- Payment history will be populated here -->
+                </div>
+                <div class="payment-stats">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Payments</div>
+                        <div class="stat-value" id="totalPayments">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Payment Consistency</div>
+                        <div class="stat-value" id="paymentConsistency">0%</                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Average Payment</div>
+                        <div class="stat-value" id="averagePayment">$0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -381,64 +446,108 @@
                 
                 // Format lease dates if they exist
                 if (tenant.lease_start) {
-                    const date = new Date(tenant.lease_start);
-                    const yyyy = date.getFullYear();
-                    const mm = String(date.getMonth() + 1).padStart(2, '0');
-                    const dd = String(date.getDate()).padStart(2, '0');
-                    document.getElementById('lease_start').value = `${yyyy}-${mm}-${dd}`;
+                    document.getElementById('lease_start').value = new Date(tenant.lease_start).toISOString().split('T')[0];
                 }
                 
                 if (tenant.lease_end) {
-                    const date = new Date(tenant.lease_end);
-                    const yyyy = date.getFullYear();
-                    const mm = String(date.getMonth() + 1).padStart(2, '0');
-                    const dd = String(date.getDate()).padStart(2, '0');
-                    document.getElementById('lease_end').value = `${yyyy}-${mm}-${dd}`;
+                    document.getElementById('lease_end').value = new Date(tenant.lease_end).toISOString().split('T')[0];
                 }
                 
-                // Update stats
-                document.getElementById('monthlyRent').textContent = `$${tenant.monthly_rent || 0}`;
-                document.getElementById('securityDeposit').textContent = `$${tenant.deposit || 0}`;
-                
-                // Check payment status
-                checkPaymentStatus(tenant.name);
+                // Update stats display
+                document.getElementById('monthlyRent').textContent = formatCurrency(tenant.monthly_rent);
+                document.getElementById('securityDeposit').textContent = formatCurrency(tenant.deposit);
+                document.getElementById('paymentStatus').textContent = tenant.paymentStatus || 'Pending';
+                document.getElementById('paymentStatus').style.color = tenant.paymentStatus === 'current' ? '#2ecc71' : '#e74c3c';
+
+                // Update payment stats if payment history exists
+                if (tenant.paymentHistory && Array.isArray(tenant.paymentHistory)) {
+                    renderPaymentHistory(tenant.paymentHistory);
+                    updatePaymentStats(tenant.paymentHistory);
+                } else {
+                    document.getElementById('paymentTimeline').innerHTML = '<p>No payment history available</p>';
+                    updatePaymentStats([]);
+                }
+
             } catch (error) {
                 console.error('Error loading tenant:', error);
                 alert('Error loading tenant. Please try again.');
             }
         }
-        
-        // Check payment status for the current month
-        async function checkPaymentStatus(tenantName) {
+
+        // Add helper function for currency formatting
+        function formatCurrency(amount) {
             try {
-                const response = await fetch(`/api/payments`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch payments');
-                }
-                
-                const payments = await response.json();
-                
-                // Filter payments for the current tenant and current month
-                const currentDate = new Date();
-                const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-                
-                const tenantPayments = payments.filter(payment => {
-                    const paymentDate = new Date(payment.payment_date);
-                    return payment.tenant_name === tenantName && 
-                           paymentDate >= startOfMonth && 
-                           paymentDate <= endOfMonth;
-                });
-                
-                const hasPaid = tenantPayments.some(payment => payment.paid);
-                
-                document.getElementById('paymentStatus').textContent = hasPaid ? 'Paid' : 'Not Paid';
-                document.getElementById('paymentStatus').style.color = hasPaid ? '#2ecc71' : '#e74c3c';
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                }).format(amount || 0);
             } catch (error) {
-                console.error('Error checking payment status:', error);
+                console.error('Error formatting currency:', error);
+                return '$0.00';
             }
         }
-        
+
+        function renderPaymentHistory(history) {
+            const timeline = document.getElementById('paymentTimeline');
+            if (!history || !Array.isArray(history) || history.length === 0) {
+                timeline.innerHTML = '<p>No payment history available</p>';
+                return;
+            }
+
+            timeline.innerHTML = history
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(payment => {
+                    // Validate payment object and provide defaults
+                    const amount = payment?.amount ? parseFloat(payment.amount) : 0;
+                    const date = payment?.date ? new Date(payment.date) : new Date();
+                    const status = payment?.status || 'unknown';
+                    const method = payment?.payment_method || 'Not specified';
+
+                    return `
+                        <div class="payment-entry ${status}">
+                            <div class="payment-info">
+                                <div class="payment-amount">
+                                    ${formatCurrency(amount)}
+                                </div>
+                                <div class="payment-date">
+                                    ${date.toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div class="payment-details">
+                                <span class="payment-method">${method}</span>
+                                <span class="status-badge status-${status}">
+                                    ${status.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        // Update payment stats calculation with better error handling
+        function updatePaymentStats(history) {
+            try {
+                if (!Array.isArray(history)) {
+                    throw new Error('Invalid payment history');
+                }
+
+                const validPayments = history.filter(p => p && p.amount && !isNaN(parseFloat(p.amount)));
+                const totalPayments = validPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+                const avgPayment = validPayments.length ? totalPayments / validPayments.length : 0;
+                const paidPayments = history.filter(p => p && p.status === 'paid').length;
+                const consistency = history.length ? (paidPayments / history.length) * 100 : 0;
+
+                document.getElementById('totalPayments').textContent = formatCurrency(totalPayments);
+                document.getElementById('averagePayment').textContent = formatCurrency(avgPayment);
+                document.getElementById('paymentConsistency').textContent = `${consistency.toFixed(1)}%`;
+            } catch (error) {
+                console.error('Error updating payment stats:', error);
+                document.getElementById('totalPayments').textContent = '$0.00';
+                document.getElementById('averagePayment').textContent = '$0.00';
+                document.getElementById('paymentConsistency').textContent = '0%';
+            }
+        }
+
         // Handle form submission
         document.getElementById('editTenantForm').addEventListener('submit', async function(event) {
             event.preventDefault();

@@ -416,15 +416,9 @@
             }
         });
 
-        let properties = [];
-
-        // Update the loadData function to handle errors better
+        // Remove the separate properties loading
         async function loadData() {
             try {
-                const propertiesResponse = await fetch('/api/properties');
-                if (!propertiesResponse.ok) throw new Error('Failed to fetch properties');
-                properties = await propertiesResponse.json();
-                
                 await loadBills();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -470,7 +464,6 @@
             }
 
             tbody.innerHTML = bills.map(bill => {
-                const property = properties.find(p => p._id === bill.property_id);
                 const status = bill.paid ? 
                     `<span class="status status-paid">Paid</span>` : 
                     `<span class="status status-unpaid">Unpaid</span>`;
@@ -479,10 +472,10 @@
 
                 return `
                     <tr>
-                        <td>${property ? property.address : 'No Property'}</td>
-                        <td>${bill.bill_type}</td>
-                        <td>$${bill.amount.toFixed(2)}</td>
-                        <td>${new Date(bill.due_date).toLocaleDateString()}</td>
+                        <td>${bill.property_info ? bill.property_info.address : 'Unknown Property'}</td>
+                        <td>${bill.bill_type || 'N/A'}</td>
+                        <td>$${(bill.amount || 0).toFixed(2)}</td>
+                        <td>${bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A'}</td>
                         <td>${status}</td>
                         <td>${bill.payment_date ? new Date(bill.payment_date).toLocaleDateString() : '-'}</td>
                         <td>${formatPeriod(bill.bill_period_start, bill.bill_period_end)}</td>

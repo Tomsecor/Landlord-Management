@@ -342,12 +342,59 @@
         });
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadProperties);
+        document.addEventListener('DOMContentLoaded', initializeForm);
 
         // Mobile menu toggle
         document.getElementById('menuToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
         });
+
+        // Initialize form
+        async function initializeForm() {
+            try {
+                // Load both properties and users in parallel
+                const [propertiesRes, usersRes] = await Promise.all([
+                    fetch('/api/properties'),
+                    fetch('/api/users')
+                ]);
+
+                if (!propertiesRes.ok) throw new Error('Failed to fetch properties');
+                if (!usersRes.ok) throw new Error('Failed to fetch users');
+
+                const properties = await propertiesRes.json();
+                const users = await usersRes.json();
+
+                // Populate properties dropdown
+                const propSelect = document.getElementById('Properties_id');
+                propSelect.innerHTML = '<option value="">Select a property</option>';
+                properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property._id;
+                    option.textContent = property.address;
+                    propSelect.appendChild(option);
+                });
+
+                // Populate users dropdown
+                const userSelect = document.getElementById('assigned_to');
+                userSelect.innerHTML = '<option value="">Select a user</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user._id;
+                    option.textContent = user.email; // or user.name if available
+                    userSelect.appendChild(option);
+                });
+
+                // Set property if provided in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const propertyId = urlParams.get('property_id');
+                if (propertyId) {
+                    propSelect.value = propertyId;
+                }
+            } catch (error) {
+                console.error('Error initializing form:', error);
+                alert('Error loading form data');
+            }
+        }
     </script>
 </body>
 </html>
